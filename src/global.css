@@ -1,0 +1,77 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  -webkit-font-smoothing: antialiased;
+}
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+input {
+  border: none;
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+}
+button {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size);
+}
+a {
+  text-decoration: none;
+}
+
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, Georgia, sans-serif;
+  --font-size: 16px;
+  --max-width: 1000px;
+  --padding-quarter: 2px;
+  --padding-half: 4px;
+  --padding: 8px;
+  --padding-and-a-bit: 12px;
+  --padding-2: 16px;
+  --padding-2-and-a-bit: 20px;
+  --line-height: 1.5;
+  --secondary-text-color: #fff;
+  --secondary-background-color: #007bff;
+  --secondary-background-color--hover: #229dff;
+  --disabled-color: #cccccc;
+}

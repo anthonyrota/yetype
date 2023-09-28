@@ -1,0 +1,91 @@
+.form-container,
+.info-container {
+  display: flex;
+  justify-content: center;
+}
+
+.form,
+.info {
+  padding-top: 40px;
+  width: min(100vw, 400px);
+}
+
+.form__title,
+.info__title {
+  margin-bottom: var(--padding-2);
+}
+
+.form__label,
+.info__label {
+  display: block;
+  color: var(--light-text-accent-color);
+  margin-top: var(--padding);
+}
+
+.form__input {
+  display: block;
+  width: 100%;
+  border: var(--border);
+  margin-bottom: var(--padding);
+  padding: var(--padding-quarter) var(--padding);
+  color: var(--main-text-color);
+}
+
+.form__submit-button,
+.info__button {
+  display: block;
+  text-align: center;
+  width: 100%;
+  cursor: pointer;
+  color: var(--secondary-text-color);
+  background-color: var(--secondary-background-color);
+  padding: var(--padding) 0;
+  margin-top: var(--padding-2-and-a-bit);
+  margin-bottom: var(--padding-2-and-a-bit);
+}
+
+.form__submit-button:hover {
+  background-color: var(--secondary-background-color--hover);
+}
+
+.info__button {
+  color: var(--main-text-color);
+  border: var(--border);
+  background-color: unset;
+}
+
+.info__button:hover {
+  background-color: var(--main-hover-bg-color);
+}
+
+.form__submit-button[disabled],
+.info__button[disabled] {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.form__other-link,
+.info__link {
+  display: block;
+  cursor: pointer;
+  color: var(--light-text-accent-color);
+  margin-top: var(--padding-2);
+}
+
+.form__other-link:visited,
+.info__link:visited {
+  color: var(--light-text-accent-color);
+}
+
+.form__other-link + .form__other-link,
+.info__link + .info__link {
+  margin-top: var(--padding-and-a-bit);
+}
+
+.form__error-message {
+  color: #d93025;
+  margin-top: var(--padding-2);
+}
+
+.info__data {
+}

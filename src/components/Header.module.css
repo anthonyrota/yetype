@@ -1,0 +1,53 @@
+.header {
+  width: 100%;
+  border-bottom: var(--border);
+}
+
+.header__inner {
+  max-width: var(--max-width);
+  margin: auto;
+  display: flex;
+}
+
+.header__section {
+  padding: 0 var(--padding);
+  display: flex;
+}
+
+.header__section:not(.header__section:last-child) {
+  border-right: var(--border);
+}
+
+.header__item {
+  padding: var(--padding);
+}
+
+.header__button {
+  cursor: pointer;
+}
+
+.header__button--anchor,
+.header__button--anchor:visited {
+  color: var(--main-text-color);
+}
+
+.header__button:hover {
+  color: var(--light-text-accent-color);
+}
+
+.header__button--active {
+  text-decoration: underline;
+}
+
+.header__icon-button {
+  cursor: pointer;
+}
+
+.header__icon {
+  width: 1em;
+  height: 1em;
+}
+
+.header__icon-path {
+  fill: var(--main-text-color);
+}
