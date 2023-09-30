@@ -14,11 +14,11 @@
 }
 
 .page--light {
-  --main-bg-color: #fff;
+  --main-bg-color: #fff0f5;
   --main-text-color: #000;
   --light-text-accent-color: #555;
-  --main-hover-bg-color: #eaeaea;
-  --border: 1px solid #ddd;
+  --main-hover-bg-color: #ffd1da;
+  --border: 1px solid #ffd1da;
   --caret-color: #000;
 }
 

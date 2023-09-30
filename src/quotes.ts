@@ -286,6 +286,6 @@ export const quotes: Quote[] = [
   },
   {
     id: '130b138c-c5d8-4c01-b4a7-7e0a0aed93da',
-    text: "I know everybody's asking the question, they wanted know \"I know he's going to wild out, I know he's going to do something crazy\". Everybody wants to know what I would do if I didn't win. I guess we'll never know",
+    text: "I know everybody's asking the question, they wanted to know \"I know he's going to wild out, I know he's going to do something crazy\". Everybody wants to know what I would do if I didn't win. I guess we'll never know",
   },
 ];

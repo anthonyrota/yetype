@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { forwardRef, useId } from 'react';
 import { NavLink } from 'react-router-dom';
 import styles from './Form.module.css';
 
@@ -100,6 +100,10 @@ export function LabeledInfoData(props: React.HTMLAttributes<HTMLParagraphElement
     </>
   );
 }
+
+export const InfoButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>((props, ref): JSX.Element => {
+  return <button {...props} className={styles.info__button} ref={ref} />;
+});
 
 export function InfoNavButton(props: { toRoute: string; children?: React.ReactNode }): JSX.Element {
   return (

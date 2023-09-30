@@ -70,6 +70,10 @@ a {
   --padding-2: 16px;
   --padding-2-and-a-bit: 20px;
   --padding-3: 24px;
+  --padding-3-and-a-bit: 28px;
+  --padding-4: 32px;
+  --padding-4-and-a-bit: 36px;
+  --padding-5: 40px;
   --line-height: 1.5;
   --secondary-text-color: #fff;
   --secondary-background-color: #007bff;
@@ -77,4 +81,5 @@ a {
   --disabled-color: #cccccc;
   --correct-color: #31c48d;
   --incorrect-color: red;
+  --centered-width: min(100vw, 400px);
 }

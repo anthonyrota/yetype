@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Observable, skip } from 'rxjs';
 import { makeApiRequest } from '../../api.js';
 import { commonWords } from '../../commonWords.js';
+import { InfoButton } from '../../components/Form.js';
 import { useObservable } from '../../hooks/useObservable.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { resetAuthenticatedUser, userAuthenticationStatus$ } from '../../persistedState/authenticatedUser.js';
@@ -33,6 +34,7 @@ const enum TestStateType {
   BeforeStart,
   InProgress,
   Ended,
+  TimeTravel,
 }
 
 type BeforeStartTestState = {
@@ -52,11 +54,26 @@ type EndedTestState = {
   type: TestStateType.Ended;
   words: string[];
   quoteId?: string;
+  replayData: SoloReplayData;
   startTime: Date;
   endTime: Date;
 };
 
-type TestState = BeforeStartTestState | InProgressTestState | EndedTestState;
+type TimeTravelTestState = {
+  type: TestStateType.TimeTravel;
+  words: string[];
+  replayData: SoloReplayData;
+  startTime: Date;
+  isEnded: boolean;
+  quoteId?: string;
+  charactersTypedCorrectly: number;
+  charactersTypedIncorrectly: number;
+  wordsTypedCorrectly: number;
+  wordsTypedIncorrectly: number;
+  secondsTaken: number;
+};
+
+type TestState = BeforeStartTestState | InProgressTestState | EndedTestState | TimeTravelTestState;
 
 function selectRandomFromArray<T>(array: T[]): T {
   if (array.length === 0) {
@@ -188,6 +205,7 @@ function getOneEditDiff(before: string, after: string): { startIndex: number; en
 
 type EndedTestData = {
   testConfig: TestConfig;
+  testState: EndedTestState | TimeTravelTestState;
   charactersTypedCorrectly: number;
   charactersTypedIncorrectly: number;
   wordsTypedCorrectly: number;
@@ -195,13 +213,25 @@ type EndedTestData = {
   secondsTaken: number;
 };
 
-function getEndedTestData(testConfig: TestConfig, testState: EndedTestState, doneWords: boolean[]): EndedTestData {
+function getEndedTestData(testConfig: TestConfig, testState: EndedTestState | TimeTravelTestState, doneWords: boolean[]): EndedTestData {
+  if (testState.type === TestStateType.TimeTravel) {
+    return {
+      testConfig,
+      testState,
+      charactersTypedCorrectly: testState.charactersTypedCorrectly,
+      charactersTypedIncorrectly: testState.charactersTypedIncorrectly,
+      wordsTypedCorrectly: testState.wordsTypedIncorrectly,
+      wordsTypedIncorrectly: testState.wordsTypedIncorrectly,
+      secondsTaken: testState.secondsTaken,
+    };
+  }
   const charactersTypedCorrectly = doneWords.map((isCorrect, i) => (isCorrect ? testState.words[i].length + 1 : 0)).reduce((p, c) => p + c, 0);
   const charactersTypedIncorrectly = doneWords.map((isCorrect, i) => (isCorrect ? 0 : testState.words[i].length + 1)).reduce((p, c) => p + c, 0);
   const wordsTypedCorrectly = doneWords.filter((isCorrect) => isCorrect).length;
   const wordsTypedIncorrectly = doneWords.filter((isCorrect) => !isCorrect).length;
   return {
     testConfig,
+    testState,
     charactersTypedCorrectly,
     charactersTypedIncorrectly,
     wordsTypedCorrectly,
@@ -209,6 +239,18 @@ function getEndedTestData(testConfig: TestConfig, testState: EndedTestState, don
     secondsTaken: testConfig.type === TypingTestType.Timed ? testConfig.timeLimit : getDateSeconds(testState.endTime) - getDateSeconds(testState.startTime),
   };
 }
+
+function findFirstAtOrAfterIndex<T>(array: T[], predicate: (value: T, i: number) => boolean, index: number): number {
+  for (let i = index; i < array.length; i++) {
+    const item = array[i];
+    if (predicate(item, i)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+const totalLines = 3;
 
 export function LocalTypePage(): JSX.Element {
   useTitle('YeType');
@@ -232,6 +274,81 @@ export function LocalTypePage(): JSX.Element {
     setInputText('');
     replayDataRef.current = [];
   };
+  const lineEndIndicesRef = useRef<number[] | null>(null);
+  useEffect(() => {
+    lineEndIndicesRef.current = lineEndIndices;
+  }, [lineEndIndices]);
+  useEffect(() => {
+    if (testState.type !== TestStateType.TimeTravel) {
+      return;
+    }
+    const { words, startTime, replayData, isEnded } = testState;
+    if (isEnded) {
+      return;
+    }
+    let lastEditIndex = -1;
+    let str = '';
+    let isDone = false;
+    const step = (): void => {
+      const millisecondsPassed = Date.now() - startTime.getTime();
+      if (lastEditIndex === replayData.length - 1) {
+        isDone = true;
+        cancelId = window.setTimeout(() => {
+          const newTestState: TestState = {
+            ...testState,
+            isEnded: true,
+          };
+          if ('quoteId' in testState) {
+            newTestState.quoteId = testState.quoteId;
+          }
+          setTestState(newTestState);
+          setFirstLineStartIndex(0);
+          setLineEndIndices(null);
+          setDoneWords([]);
+          setTestInfo('');
+          setInputText('');
+        }, 200);
+        return;
+      }
+      const newLastEditIndex = findFirstAtOrAfterIndex(
+        replayData,
+        (replayDataEdit, i) => millisecondsPassed >= replayDataEdit[2] && (i === replayData.length - 1 || millisecondsPassed < replayData[i + 1][2]),
+        Math.max(lastEditIndex, 0),
+      );
+      if (newLastEditIndex === lastEditIndex) {
+        cancelId = requestAnimationFrame(step);
+        return;
+      }
+      for (let i = lastEditIndex + 1; i <= newLastEditIndex; i++) {
+        const [startIndex, endIndex, _, insertText = ''] = replayData[i];
+        str = str.slice(0, startIndex) + insertText + str.slice(endIndex);
+      }
+      lastEditIndex = newLastEditIndex;
+      if (str === '') {
+        setFirstLineStartIndex(0);
+        setDoneWords([]);
+        setInputText('');
+        cancelId = requestAnimationFrame(step);
+        return;
+      }
+      const splitStr = str.split(/\s+/g);
+      const typedWords = splitStr.slice(0, -1);
+      const currentWord = splitStr[splitStr.length - 1];
+      const newDoneWords = typedWords.map((doneWord, i) => doneWord === words[i]);
+      setDoneWords(newDoneWords);
+      setInputText(currentWord);
+      testPushNextLine(newDoneWords.length, lineEndIndicesRef.current);
+      cancelId = requestAnimationFrame(step);
+    };
+    let cancelId = requestAnimationFrame(step);
+    return () => {
+      if (isDone) {
+        window.clearTimeout(cancelId);
+      } else {
+        cancelAnimationFrame(cancelId);
+      }
+    };
+  }, [testState]);
   useEffect(() => {
     const subscription = testConfig$.pipe(skip(1)).subscribe({
       next(newTestConfig) {
@@ -245,6 +362,7 @@ export function LocalTypePage(): JSX.Element {
   const finishTest = (testState: InProgressTestState, doneWords: boolean[]): void => {
     const newTestState: TestState = {
       type: TestStateType.Ended,
+      replayData: replayDataRef.current,
       startTime: testState.startTime,
       endTime: new Date(),
       words: testState.words,
@@ -256,8 +374,9 @@ export function LocalTypePage(): JSX.Element {
     setFirstLineStartIndex(0);
     setLineEndIndices(null);
     setDoneWords(doneWords);
-    setTestInfo(getTestInfo(testConfig, newTestState, doneWords));
+    setTestInfo('');
     setInputText('');
+    replayDataRef.current = [];
   };
   useEffect(() => {
     if (testState.type !== TestStateType.Ended) {
@@ -277,7 +396,7 @@ export function LocalTypePage(): JSX.Element {
       testState,
       doneWords,
     );
-    const replayData = replayDataRef.current;
+    const { replayData } = testState;
     switch (testConfig.type) {
       case TypingTestType.Timed: {
         const { timeLimit } = testConfig;
@@ -374,7 +493,7 @@ export function LocalTypePage(): JSX.Element {
   const firstWordRef = useRef<HTMLSpanElement>(null);
   const currentWordRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    if (testState.type === TestStateType.Ended) {
+    if (testState.type === TestStateType.Ended || testState.type === TestStateType.TimeTravel) {
       return;
     }
     const onResize = (): void => {
@@ -387,7 +506,7 @@ export function LocalTypePage(): JSX.Element {
     };
   }, [testState.type, doneWords.length]);
   useLayoutEffect(() => {
-    if (testState.type === TestStateType.Ended || lineEndIndices !== null) {
+    if (testState.type === TestStateType.Ended || (testState.type === TestStateType.TimeTravel && testState.isEnded) || lineEndIndices !== null) {
       return;
     }
     const newLineEndIndices: number[] = [];
@@ -399,13 +518,13 @@ export function LocalTypePage(): JSX.Element {
       const boundingRect = childNode.getBoundingClientRect();
       if (boundingRect.top >= lastBoundingRect.bottom) {
         newLineEndIndices.push(firstLineStartIndex + i - 1);
-        if (newLineEndIndices.length === 2) {
+        if (newLineEndIndices.length === 3) {
           break;
         }
       }
       lastBoundingRect = boundingRect;
     }
-    if (newLineEndIndices.length < 2) {
+    if (newLineEndIndices.length < 3) {
       newLineEndIndices.push(testState.words.length - 1);
     } else if (
       firstLineStartIndex !== doneWords.length &&
@@ -416,11 +535,11 @@ export function LocalTypePage(): JSX.Element {
       return;
     }
     setLineEndIndices(newLineEndIndices);
-  }, [lineEndIndices, firstLineStartIndex, testState.type === TestStateType.Ended]);
+  }, [lineEndIndices, firstLineStartIndex, testState]);
   let wordsElement: JSX.Element | null = null;
-  if (testState.type !== TestStateType.Ended) {
+  if (testState.type !== TestStateType.Ended && (testState.type !== TestStateType.TimeTravel || !testState.isEnded)) {
     if (lineEndIndices === null) {
-      const words = testState.words.slice(firstLineStartIndex, firstLineStartIndex + 80);
+      const words = testState.words.slice(firstLineStartIndex, firstLineStartIndex + 120);
       wordsElement = (
         <div className={styles.words} ref={wordsElementRef}>
           {words.map((word, i) => {
@@ -466,11 +585,13 @@ export function LocalTypePage(): JSX.Element {
               </div>
             );
           })}
-          {lineEndIndices.length === 1 ? (
-            <div className={styles.words__line} aria-hidden>
-              <span className={`${styles.words__word} ${styles['words__word--placeholder']}`}>placeholder</span>
-            </div>
-          ) : null}
+          {lineEndIndices.length < totalLines
+            ? Array.from({ length: totalLines - lineEndIndices.length }, (_, i) => (
+                <div className={styles.words__line} aria-hidden key={i}>
+                  <span className={`${styles.words__word} ${styles['words__word--placeholder']}`}>placeholder</span>
+                </div>
+              ))
+            : null}
         </div>
       );
     }
@@ -481,14 +602,29 @@ export function LocalTypePage(): JSX.Element {
     if (testState.type === TestStateType.BeforeStart) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       inputRef.current!.focus();
-    } else if (testState.type === TestStateType.Ended && document.activeElement === inputRef.current) {
+    } else if (testState.type === TestStateType.Ended || (testState.type === TestStateType.TimeTravel && testState.isEnded)) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       restartRef.current!.focus();
     }
   }, [testState]);
+  const testPushNextLine = (doneWordsCount: number, lineEndIndices_: number[] | null = lineEndIndices): void => {
+    if (lineEndIndices_ === null) {
+      throw new Error('lineEndIndices should not be null.');
+    }
+    if (lineEndIndices_[lineEndIndices_.length - 1] === testState.words.length - 1) {
+      return;
+    }
+    for (let i = lineEndIndices_.length - 1; i >= 0; i--) {
+      const lastWordIndex = lineEndIndices_[i];
+      if (doneWordsCount > lastWordIndex) {
+        setFirstLineStartIndex(lastWordIndex + 1);
+        setLineEndIndices(null);
+      }
+    }
+  };
   const onInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     let currentTestState = testState;
-    if (currentTestState.type === TestStateType.Ended) {
+    if (currentTestState.type === TestStateType.Ended || currentTestState.type === TestStateType.TimeTravel) {
       throw new Error("Test shouldn't be ended here.");
     }
     if (currentTestState.type === TestStateType.BeforeStart) {
@@ -502,7 +638,7 @@ export function LocalTypePage(): JSX.Element {
       }
       setTestState(currentTestState);
     }
-    const editMilliseconds = testState.type === TestStateType.BeforeStart ? 0 : new Date().getTime() - testState.startTime.getTime();
+    const editMilliseconds = testState.type === TestStateType.BeforeStart ? 0 : Date.now() - testState.startTime.getTime();
     if (isTestDone(testConfig, currentTestState, doneWords)) {
       finishTest(currentTestState, doneWords);
       return;
@@ -522,7 +658,7 @@ export function LocalTypePage(): JSX.Element {
       setInputText(currentInputText);
       return;
     }
-    const words = currentInputText.split(/\s+/);
+    const words = currentInputText.split(/\s+/g);
     let newDoneWords = doneWords;
     for (let i = 0; i < words.length - 1; i++) {
       const word = words[i];
@@ -533,42 +669,71 @@ export function LocalTypePage(): JSX.Element {
         return;
       }
     }
-    if (lineEndIndices === null) {
-      throw new Error('lineEndIndices should not be null.');
-    }
-    if (lineEndIndices[lineEndIndices.length - 1] !== testState.words.length - 1) {
-      for (let i = lineEndIndices.length - 1; i >= 0; i--) {
-        const lastWordIndex = lineEndIndices[i];
-        if (newDoneWords.length > lastWordIndex) {
-          setFirstLineStartIndex(lastWordIndex + 1);
-          setLineEndIndices(null);
-        }
-      }
-    }
+    testPushNextLine(newDoneWords.length);
     setInputText(words[words.length - 1]);
     setDoneWords(newDoneWords);
   };
-  return (
-    <div className={styles.container}>
-      {wordsElement}
+  const onRestartClick = () => {
+    restart(testConfig);
+  };
+  const onRestartKeyUp = (e: React.KeyboardEvent) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+    }
+  };
+  const restartButtonProps: React.ButtonHTMLAttributes<HTMLButtonElement> = {
+    onClick: onRestartClick,
+    onKeyUp: onRestartKeyUp,
+  };
+  let mainElement: JSX.Element;
+  if (testState.type === TestStateType.Ended || (testState.type === TestStateType.TimeTravel && testState.isEnded)) {
+    const endedTestData = getEndedTestData(testConfig, testState, doneWords);
+    const onTimeTravelClick = (): void => {
+      const newTestState: TestState = {
+        type: TestStateType.TimeTravel,
+        words: testState.words,
+        replayData: testState.replayData,
+        startTime: new Date(),
+        charactersTypedCorrectly: endedTestData.charactersTypedCorrectly,
+        charactersTypedIncorrectly: endedTestData.charactersTypedIncorrectly,
+        wordsTypedCorrectly: endedTestData.wordsTypedCorrectly,
+        wordsTypedIncorrectly: endedTestData.wordsTypedIncorrectly,
+        secondsTaken: endedTestData.secondsTaken,
+        isEnded: false,
+      };
+      if ('quoteId' in testState) {
+        newTestState.quoteId = testState.quoteId;
+      }
+      setTestState(newTestState);
+      setFirstLineStartIndex(0);
+      setLineEndIndices(null);
+      setDoneWords([]);
+      setTestInfo('');
+      setInputText('');
+    };
+    mainElement = <Result data={endedTestData} restartButtonProps={restartButtonProps} restartButtonRef={restartRef} onTimeTravelClick={onTimeTravelClick} />;
+  } else {
+    mainElement = (
       <div className={styles.controls}>
-        <input className={styles.controls__input} disabled={testState.type === TestStateType.Ended} value={inputText} onChange={onInputChange} ref={inputRef} />
+        <input
+          className={styles.controls__input}
+          value={inputText}
+          onChange={onInputChange}
+          ref={inputRef}
+          disabled={testState.type === TestStateType.TimeTravel}
+        />
         <div className={styles.controls__info}>{testInfo}</div>
-        <button
-          className={styles.controls__restart}
-          onClick={() => restart(testConfig)}
-          onKeyUp={(e) => {
-            if (e.code === 'Space') {
-              e.preventDefault();
-            }
-          }}
-          ref={restartRef}
-        >
+        <button className={styles.controls__restart} {...restartButtonProps} ref={restartRef}>
           New Test
         </button>
       </div>
-      {testState.type === TestStateType.Ended && <Result data={getEndedTestData(testConfig, testState, doneWords)} />}
-    </div>
+    );
+  }
+  return (
+    <>
+      {wordsElement}
+      {mainElement}
+    </>
   );
 }
 
@@ -580,50 +745,70 @@ function roundTo2Dp(num: number): string {
   return String(Math.round((num + Number.EPSILON) * 100) / 100);
 }
 
-function Result(props: { data: EndedTestData }): JSX.Element {
-  const { testConfig, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = props.data;
+function Result(props: {
+  data: EndedTestData;
+  restartButtonProps: React.ButtonHTMLAttributes<HTMLButtonElement>;
+  restartButtonRef: React.RefObject<HTMLButtonElement>;
+  onTimeTravelClick: () => void;
+}): JSX.Element {
+  const { data, restartButtonProps, restartButtonRef, onTimeTravelClick } = props;
+  const { testConfig, testState, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = data;
   const wpm = Math.floor((charactersTypedCorrectly * 12) / secondsTaken);
   const totalCharacters = charactersTypedIncorrectly + charactersTypedCorrectly;
+  const totalWords = wordsTypedIncorrectly + wordsTypedCorrectly;
   const accuracy = roundTo2Dp((charactersTypedCorrectly / totalCharacters) * 100);
+  let quoteRepeatButton: JSX.Element | null = null;
+  if (testConfig.type === TypingTestType.Quote) {
+    if (testState.quoteId === undefined) {
+      throw new Error('Expected quote id.');
+    }
+    quoteRepeatButton = <InfoButton>Repeat Quote</InfoButton>;
+  }
   return (
-    <div className={styles.result}>
-      <p>Result</p>
-      <table className={styles.result__table}>
-        <thead>
-          <tr>
-            <th className={styles['result__table-title-cell']} colSpan={2}>
-              {wpm} wpm
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {testConfig.type !== TypingTestType.Timed && (
+    <div className={styles.result__container}>
+      <div className={styles.result}>
+        <p className={styles.result__label}>Result</p>
+        <table className={styles.result__table}>
+          <thead>
             <tr>
-              <td className={styles['result__table-cell']}>Time taken</td>
-              <td className={styles['result__table-cell']}>{roundTo1Dp(secondsTaken)}s</td>
+              <th className={styles['result__table-title-cell']} colSpan={2}>
+                {wpm} wpm
+              </th>
             </tr>
-          )}
-          <tr>
-            <td className={styles['result__table-cell']}>Characters</td>
-            <td className={styles['result__table-cell']}>
-              (<span className={styles.result__correct}>{charactersTypedCorrectly}</span>|
-              <span className={styles.result__incorrect}>{charactersTypedIncorrectly}</span>) {totalCharacters}
-            </td>
-          </tr>
-          <tr>
-            <td className={styles['result__table-cell']}>Accuracy</td>
-            <td className={styles['result__table-cell']}>{accuracy}%</td>
-          </tr>
-          <tr>
-            <td className={styles['result__table-cell']}>Correct words</td>
-            <td className={`${styles['result__table-cell']} ${styles.result__correct}`}>{wordsTypedCorrectly}</td>
-          </tr>
-          <tr>
-            <td className={styles['result__table-cell']}>Incorrect words</td>
-            <td className={`${styles['result__table-cell']} ${styles.result__incorrect}`}>{wordsTypedIncorrectly}</td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {testConfig.type !== TypingTestType.Timed && (
+              <tr>
+                <td className={styles['result__table-cell']}>Time taken</td>
+                <td className={styles['result__table-cell']}>{roundTo1Dp(secondsTaken)}s</td>
+              </tr>
+            )}
+            <tr>
+              <td className={styles['result__table-cell']}>Characters</td>
+              <td className={styles['result__table-cell']}>
+                {totalCharacters} (<span className={styles.result__correct}>{charactersTypedCorrectly}</span>/
+                <span className={styles.result__incorrect}>{charactersTypedIncorrectly}</span>)
+              </td>
+            </tr>
+            <tr>
+              <td className={styles['result__table-cell']}>Words</td>
+              <td className={styles['result__table-cell']}>
+                {totalWords} (<span className={styles.result__correct}>{wordsTypedCorrectly}</span>/
+                <span className={styles.result__incorrect}>{wordsTypedIncorrectly}</span>)
+              </td>
+            </tr>
+            <tr>
+              <td className={styles['result__table-cell']}>Accuracy</td>
+              <td className={styles['result__table-cell']}>{accuracy}%</td>
+            </tr>
+          </tbody>
+        </table>
+        <InfoButton {...restartButtonProps} ref={restartButtonRef}>
+          New Test
+        </InfoButton>
+        {quoteRepeatButton}
+        <InfoButton onClick={onTimeTravelClick}>Time Travel</InfoButton>
+      </div>
     </div>
   );
 }
