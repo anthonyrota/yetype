@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { distinctUntilChanged, map } from 'rxjs';
 import { useObservable } from '../hooks/useObservable.js';
 import { authenticatedUser$, userAuthenticationStatus$ } from '../persistedState/authenticatedUser.js';
-import { TypingTestType, setTestConfig, testConfig$, validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfig.js';
+import { TestConfig, TypingTestType, setTestConfig, testConfig$, validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfig.js';
 import { Theme, setTheme, theme$ } from '../persistedState/theme.js';
 import { Route } from '../routes.js';
 import styles from './Header.module.css';
@@ -83,13 +83,18 @@ function HeaderThemeButton(): JSX.Element {
 
 function HeaderTestConfigSections(): JSX.Element {
   const testConfig = useObservable(testConfig$);
+  const navigate = useNavigate();
+  const updateConfig = (newConfig: TestConfig): void => {
+    navigate(Route.LocalType);
+    setTestConfig(newConfig);
+  };
   return (
     <>
       <HeaderSection>
         <HeaderActivatableButton
           isActive={testConfig.type === TypingTestType.Timed}
           onClickActivate={() => {
-            setTestConfig({ ...testConfig, type: TypingTestType.Timed });
+            updateConfig({ ...testConfig, type: TypingTestType.Timed });
           }}
         >
           Time
@@ -97,7 +102,7 @@ function HeaderTestConfigSections(): JSX.Element {
         <HeaderActivatableButton
           isActive={testConfig.type === TypingTestType.WordLimit}
           onClickActivate={() => {
-            setTestConfig({ ...testConfig, type: TypingTestType.WordLimit });
+            updateConfig({ ...testConfig, type: TypingTestType.WordLimit });
           }}
         >
           Words
@@ -105,7 +110,7 @@ function HeaderTestConfigSections(): JSX.Element {
         <HeaderActivatableButton
           isActive={testConfig.type === TypingTestType.Quote}
           onClickActivate={() => {
-            setTestConfig({ ...testConfig, type: TypingTestType.Quote });
+            updateConfig({ ...testConfig, type: TypingTestType.Quote });
           }}
         >
           Quote
@@ -118,7 +123,7 @@ function HeaderTestConfigSections(): JSX.Element {
                 <HeaderActivatableButton
                   isActive={testConfig.timeLimit === timeLimit}
                   onClickActivate={() => {
-                    setTestConfig({ ...testConfig, timeLimit });
+                    updateConfig({ ...testConfig, timeLimit });
                   }}
                   key={timeLimit}
                 >
@@ -129,7 +134,7 @@ function HeaderTestConfigSections(): JSX.Element {
                 <HeaderActivatableButton
                   isActive={testConfig.wordLimit === wordLimit}
                   onClickActivate={() => {
-                    setTestConfig({ ...testConfig, wordLimit });
+                    updateConfig({ ...testConfig, wordLimit });
                   }}
                   key={wordLimit}
                 >
