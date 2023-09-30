@@ -186,6 +186,30 @@ function getOneEditDiff(before: string, after: string): { startIndex: number; en
   };
 }
 
+type EndedTestData = {
+  testConfig: TestConfig;
+  charactersTypedCorrectly: number;
+  charactersTypedIncorrectly: number;
+  wordsTypedCorrectly: number;
+  wordsTypedIncorrectly: number;
+  secondsTaken: number;
+};
+
+function getEndedTestData(testConfig: TestConfig, testState: EndedTestState, doneWords: boolean[]): EndedTestData {
+  const charactersTypedCorrectly = doneWords.map((isCorrect, i) => (isCorrect ? testState.words[i].length + 1 : 0)).reduce((p, c) => p + c, 0);
+  const charactersTypedIncorrectly = doneWords.map((isCorrect, i) => (isCorrect ? 0 : testState.words[i].length + 1)).reduce((p, c) => p + c, 0);
+  const wordsTypedCorrectly = doneWords.filter((isCorrect) => isCorrect).length;
+  const wordsTypedIncorrectly = doneWords.filter((isCorrect) => !isCorrect).length;
+  return {
+    testConfig,
+    charactersTypedCorrectly,
+    charactersTypedIncorrectly,
+    wordsTypedCorrectly,
+    wordsTypedIncorrectly,
+    secondsTaken: testConfig.type === TypingTestType.Timed ? testConfig.timeLimit : getDateSeconds(testState.endTime) - getDateSeconds(testState.startTime),
+  };
+}
+
 export function LocalTypePage(): JSX.Element {
   useTitle('YeType');
   const testConfig = useObservable(testConfig$);
@@ -248,10 +272,11 @@ export function LocalTypePage(): JSX.Element {
     }
     const { token } = authenticatedUser;
     let postObservable: Observable<SaveSoloRandomTimedResponse | SaveSoloQuoteResponse | SaveSoloRandomWordsResponse>;
-    const charactersTypedCorrectly = doneWords.map((isCorrect, i) => (isCorrect ? testState.words[i].length + 1 : 0)).reduce((p, c) => p + c, 0);
-    const charactersTypedIncorrectly = doneWords.map((isCorrect, i) => (isCorrect ? 0 : testState.words[i].length + 1)).reduce((p, c) => p + c, 0);
-    const wordsTypedCorrectly = doneWords.filter((isCorrect) => isCorrect).length;
-    const wordsTypedIncorrectly = doneWords.filter((isCorrect) => !isCorrect).length;
+    const { charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = getEndedTestData(
+      testConfig,
+      testState,
+      doneWords,
+    );
     const replayData = replayDataRef.current;
     switch (testConfig.type) {
       case TypingTestType.Timed: {
@@ -277,7 +302,7 @@ export function LocalTypePage(): JSX.Element {
         const request: SaveSoloRandomWordsRequest = {
           words: testState.words.slice(doneWords.length).join(' '),
           testWordLimit: wordLimit,
-          secondsTaken: getDateSeconds(testState.endTime) - getDateSeconds(testState.startTime),
+          secondsTaken,
           charactersTypedCorrectly,
           charactersTypedIncorrectly,
           wordsTypedCorrectly,
@@ -297,7 +322,7 @@ export function LocalTypePage(): JSX.Element {
         }
         const request: SaveSoloQuoteRequest = {
           quoteId: testState.quoteId,
-          secondsTaken: getDateSeconds(testState.endTime) - getDateSeconds(testState.startTime),
+          secondsTaken,
           charactersTypedCorrectly,
           charactersTypedIncorrectly,
           wordsTypedCorrectly,
@@ -542,6 +567,63 @@ export function LocalTypePage(): JSX.Element {
           New Test
         </button>
       </div>
+      {testState.type === TestStateType.Ended && <Result data={getEndedTestData(testConfig, testState, doneWords)} />}
+    </div>
+  );
+}
+
+function roundTo1Dp(num: number): string {
+  return String(Math.round((num + Number.EPSILON) * 10) / 10);
+}
+
+function roundTo2Dp(num: number): string {
+  return String(Math.round((num + Number.EPSILON) * 100) / 100);
+}
+
+function Result(props: { data: EndedTestData }): JSX.Element {
+  const { testConfig, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = props.data;
+  const wpm = Math.floor((charactersTypedCorrectly * 12) / secondsTaken);
+  const totalCharacters = charactersTypedIncorrectly + charactersTypedCorrectly;
+  const accuracy = roundTo2Dp((charactersTypedCorrectly / totalCharacters) * 100);
+  return (
+    <div className={styles.result}>
+      <p>Result</p>
+      <table className={styles.result__table}>
+        <thead>
+          <tr>
+            <th className={styles['result__table-title-cell']} colSpan={2}>
+              {wpm} wpm
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {testConfig.type !== TypingTestType.Timed && (
+            <tr>
+              <td className={styles['result__table-cell']}>Time taken</td>
+              <td className={styles['result__table-cell']}>{roundTo1Dp(secondsTaken)}s</td>
+            </tr>
+          )}
+          <tr>
+            <td className={styles['result__table-cell']}>Characters</td>
+            <td className={styles['result__table-cell']}>
+              (<span className={styles.result__correct}>{charactersTypedCorrectly}</span>|
+              <span className={styles.result__incorrect}>{charactersTypedIncorrectly}</span>) {totalCharacters}
+            </td>
+          </tr>
+          <tr>
+            <td className={styles['result__table-cell']}>Accuracy</td>
+            <td className={styles['result__table-cell']}>{accuracy}%</td>
+          </tr>
+          <tr>
+            <td className={styles['result__table-cell']}>Correct words</td>
+            <td className={`${styles['result__table-cell']} ${styles.result__correct}`}>{wordsTypedCorrectly}</td>
+          </tr>
+          <tr>
+            <td className={styles['result__table-cell']}>Incorrect words</td>
+            <td className={`${styles['result__table-cell']} ${styles.result__incorrect}`}>{wordsTypedIncorrectly}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

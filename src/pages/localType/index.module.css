@@ -26,11 +26,11 @@
 }
 
 .words__word--incorrect {
-  color: #e02424;
+  color: var(--incorrect-color);
 }
 
 .words__word--correct {
-  color: #31c48d;
+  color: var(--correct-color);
 }
 
 .words__word--placeholder {
@@ -66,4 +66,41 @@
 
 .controls__restart:hover {
   color: var(--light-text-accent-color);
+}
+
+.result {
+  margin-top: var(--padding-3);
+}
+
+.result__label {
+  color: var(--light-text-accent-color);
+}
+
+.result__table {
+  margin-top: var(--padding-2);
+  border-collapse: collapse;
+}
+
+.result__table-cell {
+  border: var(--border);
+  padding: var(--padding) var(--padding-2);
+}
+
+.result__table-cell:last-child {
+  text-align: center;
+}
+
+.result__table-title-cell {
+  border: var(--border);
+  padding: var(--padding-and-a-bit);
+}
+
+.result__correct {
+  color: var(--correct-color);
+  margin: 2px;
+}
+
+.result__incorrect {
+  color: var(--incorrect-color);
+  margin: 0 2px;
 }

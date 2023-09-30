@@ -75,4 +75,6 @@ a {
   --secondary-background-color: #007bff;
   --secondary-background-color--hover: #229dff;
   --disabled-color: #cccccc;
+  --correct-color: #31c48d;
+  --incorrect-color: red;
 }
