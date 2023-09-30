@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Observable, skip } from 'rxjs';
 import { makeApiRequest } from '../../api.js';
-import { top10kEnglishWords } from '../../commonWords.js';
+import { commonWords } from '../../commonWords.js';
 import { useObservable } from '../../hooks/useObservable.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { resetAuthenticatedUser, userAuthenticationStatus$ } from '../../persistedState/authenticatedUser.js';
@@ -69,7 +69,7 @@ function makeRandomWordList(numWords: number): string[] {
   const words: string[] = [];
   let chars = 0;
   while (words.length < numWords) {
-    const word = selectRandomFromArray(top10kEnglishWords);
+    const word = selectRandomFromArray(commonWords);
     const newChars = chars + chars === 0 ? words.length : words.length + 1;
     if (newChars > maxCharacters) {
       break;
