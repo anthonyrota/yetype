@@ -6,7 +6,7 @@ type Quote = {
 export const quotes: Quote[] = [
   {
     id: '40255543-2635-4175-a4cd-c9ae5cfc17a1',
-    text: "Yo Taylor, I'm really happy for you, I'll let you finish, but Beyoncé has one of the best videos of all time. One of the best videos of all time!",
+    text: "Yo Taylor, I'm really happy for you, I'll let you finish, but Beyonce has one of the best videos of all time. One of the best videos of all time!",
   },
   {
     id: 'a02917c1-0d9c-4cc4-b56a-cb524a21ba13',

@@ -25,7 +25,7 @@ async function getSaveSoloQuoteResponse(req: import('express').Request): Promise
       charactersTypedIncorrectly,
       wordsTypedCorrectly,
       wordsTypedIncorrectly,
-      replayData,
+      JSON.stringify(replayData),
       new Date(),
     ],
   );

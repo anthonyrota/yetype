@@ -1,6 +1,8 @@
 import { maxTestSeconds } from './verification.js';
 
-export type SoloReplayDataEdit = [startIndex: number, endIndex: number, milliseconds: number, insertText?: string];
+export type SoloReplayDataEdit =
+  | [startIndex: number, endIndex: number, milliseconds: number]
+  | [startIndex: number, endIndex: number, milliseconds: number, insertText: string];
 export type SoloReplayData = SoloReplayDataEdit[];
 
 export function isValidSoloReplayData(json: unknown): json is SoloReplayData {

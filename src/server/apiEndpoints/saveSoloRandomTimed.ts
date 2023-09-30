@@ -25,7 +25,7 @@ async function getSaveSoloRandomTimedResponse(req: import('express').Request): P
       charactersTypedIncorrectly,
       wordsTypedCorrectly,
       wordsTypedIncorrectly,
-      replayData,
+      JSON.stringify(replayData),
       new Date(),
     ],
   );

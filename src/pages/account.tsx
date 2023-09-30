@@ -1,5 +1,5 @@
 import { makeApiRequest } from '../api.js';
-import { InfoButtonLink, InfoContainer, InfoData, InfoNavButton, InfoNavLink, InfoTitle } from '../components/Form.js';
+import { InfoButtonLink, InfoContainer, InfoNavButton, InfoNavLink, InfoTitle, LabeledInfoData } from '../components/Form.js';
 import { useAuthenticationGuard } from '../hooks/useAuthenticationGuard.js';
 import { useTitle } from '../hooks/useTitle.js';
 import { resetAuthenticatedUser } from '../persistedState/authenticatedUser.js';
@@ -27,9 +27,9 @@ export function AccountPage(): JSX.Element | null {
   return (
     <InfoContainer>
       <InfoTitle>Account Details</InfoTitle>
-      <InfoData label="Username">{userName}</InfoData>
-      <InfoData label="Display Name">{displayName}</InfoData>
-      <InfoData label="Email">{email}</InfoData>
+      <LabeledInfoData label="Username">{userName}</LabeledInfoData>
+      <LabeledInfoData label="Display Name">{displayName}</LabeledInfoData>
+      <LabeledInfoData label="Email">{email}</LabeledInfoData>
       <InfoNavButton toRoute={Route.EditAccount}>Edit Account Details</InfoNavButton>
       <InfoNavLink toRoute={Route.Stats}>See your stats</InfoNavLink>
       <InfoNavLink toRoute={Route.EditPassword}>Change your password</InfoNavLink>

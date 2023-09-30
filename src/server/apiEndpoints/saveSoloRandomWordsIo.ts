@@ -3,12 +3,14 @@ import {
   isValidCharactersTypedCorrectly,
   isValidCharactersTypedIncorrectly,
   isValidSecondsTaken,
+  isValidTestWordLimit,
   isValidWords,
   isValidWordsTypedCorrectly,
   isValidWordsTypedIncorrectly,
   normalizeCharactersTypedCorrectly,
   normalizeCharactersTypedIncorrectly,
   normalizeSecondsTaken,
+  normalizeTestWordLimit,
   normalizeWords,
   normalizeWordsTypedCorrectly,
   normalizeWordsTypedIncorrectly,
@@ -18,6 +20,7 @@ export const saveSoloRandomWordsEndpoint = '/api/savesolowords';
 
 export type SaveSoloRandomWordsRequest = {
   words: string;
+  testWordLimit: number;
   secondsTaken: number;
   charactersTypedCorrectly: number;
   charactersTypedIncorrectly: number;
@@ -30,17 +33,20 @@ export function getValidSaveSoloRandomWordsRequest(body: unknown): SaveSoloRando
   if (typeof body !== 'object' || body === null) {
     return null;
   }
-  const { words, secondsTaken, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, replayData } = body as {
-    words: unknown;
-    secondsTaken: unknown;
-    charactersTypedCorrectly: unknown;
-    charactersTypedIncorrectly: unknown;
-    wordsTypedCorrectly: unknown;
-    wordsTypedIncorrectly: unknown;
-    replayData: unknown;
-  };
+  const { words, testWordLimit, secondsTaken, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, replayData } =
+    body as {
+      words: unknown;
+      testWordLimit: unknown;
+      secondsTaken: unknown;
+      charactersTypedCorrectly: unknown;
+      charactersTypedIncorrectly: unknown;
+      wordsTypedCorrectly: unknown;
+      wordsTypedIncorrectly: unknown;
+      replayData: unknown;
+    };
   if (
     typeof words !== 'string' ||
+    typeof testWordLimit !== 'number' ||
     typeof secondsTaken !== 'number' ||
     typeof charactersTypedCorrectly !== 'number' ||
     typeof charactersTypedIncorrectly !== 'number' ||
@@ -50,6 +56,7 @@ export function getValidSaveSoloRandomWordsRequest(body: unknown): SaveSoloRando
     return null;
   }
   const normalizedWords = normalizeWords(words);
+  const normalizedTestWordLimit = normalizeTestWordLimit(testWordLimit);
   const normalizedSecondsTaken = normalizeSecondsTaken(secondsTaken);
   const normalizedCharactersTypedCorrectly = normalizeCharactersTypedCorrectly(charactersTypedCorrectly);
   const normalizedCharactersTypedIncorrectly = normalizeCharactersTypedIncorrectly(charactersTypedIncorrectly);
@@ -57,6 +64,7 @@ export function getValidSaveSoloRandomWordsRequest(body: unknown): SaveSoloRando
   const normalizedWordsTypedIncorrectly = normalizeWordsTypedIncorrectly(wordsTypedIncorrectly);
   if (
     !isValidWords(normalizedWords) ||
+    !isValidTestWordLimit(normalizedTestWordLimit) ||
     !isValidSecondsTaken(normalizedSecondsTaken) ||
     !isValidCharactersTypedCorrectly(normalizedCharactersTypedCorrectly) ||
     !isValidCharactersTypedIncorrectly(normalizedCharactersTypedIncorrectly) ||
@@ -68,6 +76,7 @@ export function getValidSaveSoloRandomWordsRequest(body: unknown): SaveSoloRando
   }
   return {
     words: normalizedWords,
+    testWordLimit: normalizedTestWordLimit,
     secondsTaken: normalizedSecondsTaken,
     charactersTypedCorrectly: normalizedCharactersTypedCorrectly,
     charactersTypedIncorrectly: normalizedCharactersTypedIncorrectly,

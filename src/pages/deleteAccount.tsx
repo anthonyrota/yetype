@@ -8,6 +8,7 @@ import {
   FormNavLink,
   FormSubmitButton,
   FormTitle,
+  InfoData,
   formErrorMessages,
   makeFormInputHandler,
 } from '../components/Form.js';
@@ -141,7 +142,7 @@ export function DeleteAccountForm(props: {
       </FormLabelInputPair>
       {!isSubmitting && state.errorMessage !== null && <FormErrorMessage>{state.errorMessage}</FormErrorMessage>}
       <FormSubmitButton disabled={isSubmitting}>Delete Account</FormSubmitButton>
-      <p>Warning: This action is permanent and irreversible!</p>
+      <InfoData>Warning: This action is permanent and irreversible!</InfoData>
       <FormNavLink toRoute={Route.Account}>Cancel</FormNavLink>
     </Form>
   );

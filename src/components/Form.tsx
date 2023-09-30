@@ -84,7 +84,11 @@ export function InfoTitle(props: React.HTMLAttributes<HTMLDivElement>): JSX.Elem
   return <p {...props} className={styles.info__title} />;
 }
 
-export function InfoData(props: React.HTMLAttributes<HTMLDivElement> & { label: string }): JSX.Element {
+export function InfoData(props: React.HTMLAttributes<HTMLParagraphElement>): JSX.Element {
+  return <p {...props} className={styles.info__data} />;
+}
+
+export function LabeledInfoData(props: React.HTMLAttributes<HTMLParagraphElement> & { label: string }): JSX.Element {
   const { label, ...dataProps } = props;
   const id = useId();
   return (
@@ -92,7 +96,7 @@ export function InfoData(props: React.HTMLAttributes<HTMLDivElement> & { label: 
       <p className={styles.info__label} id={id}>
         {label}
       </p>
-      <p {...dataProps} className={styles.info__data} aria-labelledby={id} />
+      <InfoData {...dataProps} aria-labelledby={id} />
     </>
   );
 }

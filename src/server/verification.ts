@@ -53,13 +53,19 @@ export function normalizeUserNameOrEmail(userNameOrEmail: string): string {
   return shouldTreatUserNameOrEmailAsEmail(userNameOrEmail) ? normalizeEmail(userNameOrEmail) : normalizeUserName(userNameOrEmail);
 }
 export const maxTestSeconds = 3600;
-const maxWords = 2000;
-const maxCharacters = 10000;
+export const maxWords = 2000;
+export const maxCharacters = 10000;
 export function isValidTestTimeSeconds(testTimeSeconds: number): boolean {
   return Number.isInteger(testTimeSeconds) && testTimeSeconds >= 1 && testTimeSeconds <= maxTestSeconds;
 }
 export function normalizeTestTimeSeconds(testTimeSeconds: number): number {
   return testTimeSeconds;
+}
+export function isValidTestWordLimit(testWordLimit: number): boolean {
+  return Number.isInteger(testWordLimit) && testWordLimit >= 1 && testWordLimit <= maxWords;
+}
+export function normalizeTestWordLimit(testWordLimit: number): number {
+  return testWordLimit;
 }
 export function isValidWords(words: string): boolean {
   return words.length >= 1 && words.length <= maxCharacters;

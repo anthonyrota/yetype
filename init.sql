@@ -74,7 +74,7 @@ create table if not exists user_sessions (
 create table if not exists typing_tests_solo_random_timed (
   id uuid primary key,
   user_id uuid not null,
-  words text,
+  words text not null,
   test_time_seconds integer not null,
   characters_typed_correctly integer not null,
   characters_typed_incorrectly integer not null,
@@ -88,7 +88,8 @@ create table if not exists typing_tests_solo_random_timed (
 create table if not exists typing_tests_solo_random_words (
   id uuid primary key,
   user_id uuid not null,
-  words text,
+  words text not null,
+  test_word_limit integer not null,
   seconds_taken real not null,
   characters_typed_correctly integer not null,
   characters_typed_incorrectly integer not null,
