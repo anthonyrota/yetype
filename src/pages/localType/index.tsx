@@ -28,6 +28,7 @@ import {
 } from '../../server/apiEndpoints/saveSoloRandomWordsIo.js';
 import { SoloReplayData, SoloReplayDataEdit } from '../../server/replayData.js';
 import { maxCharacters, maxWords } from '../../server/verification.js';
+import { getOneEditDiff } from './getOneEditDiff.js';
 import styles from './index.module.css';
 
 const enum TestStateType {
@@ -127,7 +128,7 @@ function getDateSeconds(date: Date): number {
   return date.getTime() / 1000;
 }
 
-function getTestInfo(testConfig: TestConfig, testState: TestState, doneWords: boolean[]): string {
+function getTestInfo(testConfig: TestConfig, testState: TestState, numDoneWords: number): string {
   switch (testConfig.type) {
     case TypingTestType.Timed: {
       const { timeLimit } = testConfig;
@@ -142,15 +143,15 @@ function getTestInfo(testConfig: TestConfig, testState: TestState, doneWords: bo
     }
     case TypingTestType.WordLimit: {
       const { wordLimit } = testConfig;
-      return `${doneWords.length}/${wordLimit}`;
+      return `${numDoneWords}/${wordLimit}`;
     }
     case TypingTestType.Quote: {
-      return `${doneWords.length}/${testState.words.length}`;
+      return `${numDoneWords}/${testState.words.length}`;
     }
   }
 }
 
-function isTestDone(testConfig: TestConfig, testState: Extract<TestState, { type: TestStateType.InProgress }>, doneWords: boolean[]): boolean {
+function isTestDone(testConfig: TestConfig, testState: Extract<TestState, { type: TestStateType.InProgress }>, numDoneWords: number): boolean {
   switch (testConfig.type) {
     case TypingTestType.Timed: {
       const { timeLimit } = testConfig;
@@ -158,49 +159,12 @@ function isTestDone(testConfig: TestConfig, testState: Extract<TestState, { type
     }
     case TypingTestType.WordLimit: {
       const { wordLimit } = testConfig;
-      return doneWords.length === (wordLimit as number);
+      return numDoneWords === (wordLimit as number);
     }
     case TypingTestType.Quote: {
-      return doneWords.length === testState.words.length;
+      return numDoneWords === testState.words.length;
     }
   }
-}
-
-function getOneEditDiff(before: string, after: string): { startIndex: number; endIndex: number; insertText: string } {
-  if (before === '') {
-    return { startIndex: 0, endIndex: 0, insertText: after };
-  }
-  let firstUnequalCharIndex = -1;
-  for (let i = 0; i < before.length; i++) {
-    if (i > after.length) {
-      return { startIndex: after.length, endIndex: before.length, insertText: '' };
-    }
-    if (before[i] !== after[i]) {
-      firstUnequalCharIndex = i;
-      break;
-    }
-  }
-  if (firstUnequalCharIndex === -1) {
-    return { startIndex: before.length, endIndex: before.length, insertText: after.slice(before.length) };
-  }
-  let lastUnequalCharIndexFromEnd = -1;
-  for (let i = 0; i < before.length; i++) {
-    if (i > after.length) {
-      return { startIndex: 0, endIndex: before.length - after.length, insertText: '' };
-    }
-    if (before[before.length - i - 1] !== after[after.length - i - 1]) {
-      lastUnequalCharIndexFromEnd = i;
-      break;
-    }
-  }
-  if (lastUnequalCharIndexFromEnd === -1) {
-    return { startIndex: 0, endIndex: 0, insertText: after.slice(0, after.length - before.length) };
-  }
-  return {
-    startIndex: firstUnequalCharIndex,
-    endIndex: before.length - lastUnequalCharIndexFromEnd,
-    insertText: after.slice(firstUnequalCharIndex, -lastUnequalCharIndexFromEnd),
-  };
 }
 
 type EndedTestData = {
@@ -213,22 +177,23 @@ type EndedTestData = {
   secondsTaken: number;
 };
 
-function getEndedTestData(testConfig: TestConfig, testState: EndedTestState | TimeTravelTestState, doneWords: boolean[]): EndedTestData {
+function getEndedTestData(testConfig: TestConfig, testState: EndedTestState | TimeTravelTestState, doneWords: string[]): EndedTestData {
+  const doneWordsIsCorrect = doneWords.map((word, i) => testState.words[i] === word);
   if (testState.type === TestStateType.TimeTravel) {
     return {
       testConfig,
       testState,
       charactersTypedCorrectly: testState.charactersTypedCorrectly,
       charactersTypedIncorrectly: testState.charactersTypedIncorrectly,
-      wordsTypedCorrectly: testState.wordsTypedIncorrectly,
+      wordsTypedCorrectly: testState.wordsTypedCorrectly,
       wordsTypedIncorrectly: testState.wordsTypedIncorrectly,
       secondsTaken: testState.secondsTaken,
     };
   }
-  const charactersTypedCorrectly = doneWords.map((isCorrect, i) => (isCorrect ? testState.words[i].length + 1 : 0)).reduce((p, c) => p + c, 0);
-  const charactersTypedIncorrectly = doneWords.map((isCorrect, i) => (isCorrect ? 0 : testState.words[i].length + 1)).reduce((p, c) => p + c, 0);
-  const wordsTypedCorrectly = doneWords.filter((isCorrect) => isCorrect).length;
-  const wordsTypedIncorrectly = doneWords.filter((isCorrect) => !isCorrect).length;
+  const charactersTypedCorrectly = doneWordsIsCorrect.map((isCorrect, i) => (isCorrect ? testState.words[i].length + 1 : 0)).reduce((p, c) => p + c, 0);
+  const charactersTypedIncorrectly = doneWordsIsCorrect.map((isCorrect, i) => (isCorrect ? 0 : testState.words[i].length + 1)).reduce((p, c) => p + c, 0);
+  const wordsTypedCorrectly = doneWordsIsCorrect.filter((isCorrect) => isCorrect).length;
+  const wordsTypedIncorrectly = doneWordsIsCorrect.filter((isCorrect) => !isCorrect).length;
   return {
     testConfig,
     testState,
@@ -258,19 +223,19 @@ export function LocalTypePage(): JSX.Element {
   const [testState, setTestState] = useState(() => makeBeforeStartTestState(testConfig));
   const [firstLineStartIndex, setFirstLineStartIndex] = useState(0);
   const [lineEndIndices, setLineEndIndices] = useState<number[] | null>(null);
-  const [doneWords, setDoneWords] = useState<boolean[]>([]);
-  const [testInfo, setTestInfo] = useState(() => getTestInfo(testConfig, testState, doneWords));
+  const [doneWords, setDoneWords] = useState<string[]>([]);
+  const [testInfo, setTestInfo] = useState(() => getTestInfo(testConfig, testState, doneWords.length));
   const [inputText, setInputText] = useState('');
   const replayDataRef = useRef<SoloReplayData>([]);
   const wordsElementRef = useRef<HTMLDivElement>(null);
   const restart = (newTestConfig: TestConfig): void => {
     const newTestState = makeBeforeStartTestState(newTestConfig);
-    const newDoneWords: boolean[] = [];
+    const newDoneWords: string[] = [];
     setTestState(newTestState);
     setFirstLineStartIndex(0);
     setLineEndIndices(null);
     setDoneWords(newDoneWords);
-    setTestInfo(getTestInfo(newTestConfig, newTestState, newDoneWords));
+    setTestInfo(getTestInfo(newTestConfig, newTestState, newDoneWords.length));
     setInputText('');
     replayDataRef.current = [];
   };
@@ -282,7 +247,7 @@ export function LocalTypePage(): JSX.Element {
     if (testState.type !== TestStateType.TimeTravel) {
       return;
     }
-    const { words, startTime, replayData, isEnded } = testState;
+    const { startTime, replayData, isEnded } = testState;
     if (isEnded) {
       return;
     }
@@ -334,7 +299,7 @@ export function LocalTypePage(): JSX.Element {
       const splitStr = str.split(/\s+/g);
       const typedWords = splitStr.slice(0, -1);
       const currentWord = splitStr[splitStr.length - 1];
-      const newDoneWords = typedWords.map((doneWord, i) => doneWord === words[i]);
+      const newDoneWords = typedWords;
       setDoneWords(newDoneWords);
       setInputText(currentWord);
       testPushNextLine(newDoneWords.length, lineEndIndicesRef.current);
@@ -359,7 +324,7 @@ export function LocalTypePage(): JSX.Element {
       subscription.unsubscribe();
     };
   }, []);
-  const finishTest = (testState: InProgressTestState, doneWords: boolean[]): void => {
+  const finishTest = (testState: InProgressTestState, doneWords: string[]): void => {
     const newTestState: TestState = {
       type: TestStateType.Ended,
       replayData: replayDataRef.current,
@@ -480,11 +445,11 @@ export function LocalTypePage(): JSX.Element {
       return;
     }
     const id = setInterval(() => {
-      if (isTestDone(testConfig, testState, doneWords)) {
+      if (isTestDone(testConfig, testState, doneWords.length)) {
         finishTest(testState, doneWords);
         return;
       }
-      setTestInfo(getTestInfo(testConfig, testState, doneWords));
+      setTestInfo(getTestInfo(testConfig, testState, doneWords.length));
     });
     return () => {
       clearInterval(id);
@@ -569,7 +534,7 @@ export function LocalTypePage(): JSX.Element {
                         wordIndex === doneWords.length
                           ? styles['words__word--current']
                           : wordIndex < doneWords.length
-                          ? doneWords[wordIndex]
+                          ? doneWords[wordIndex] === testState.words[wordIndex]
                             ? styles['words__word--correct']
                             : styles['words__word--incorrect']
                           : false,
@@ -639,7 +604,7 @@ export function LocalTypePage(): JSX.Element {
       setTestState(currentTestState);
     }
     const editMilliseconds = testState.type === TestStateType.BeforeStart ? 0 : Date.now() - testState.startTime.getTime();
-    if (isTestDone(testConfig, currentTestState, doneWords)) {
+    if (isTestDone(testConfig, currentTestState, doneWords.length)) {
       finishTest(currentTestState, doneWords);
       return;
     }
@@ -647,7 +612,7 @@ export function LocalTypePage(): JSX.Element {
     const diff = getOneEditDiff(inputText, currentInputText);
     let firstLineWordCharStartIndex = 0;
     for (let i = 0; i < doneWords.length; i++) {
-      firstLineWordCharStartIndex += testState.words[i].length + 1;
+      firstLineWordCharStartIndex += doneWords[i].length + 1;
     }
     const editStartIndex = firstLineWordCharStartIndex + diff.startIndex;
     const editEndIndex = firstLineWordCharStartIndex + diff.endIndex;
@@ -659,11 +624,10 @@ export function LocalTypePage(): JSX.Element {
       return;
     }
     const words = currentInputText.split(/\s+/g);
-    let newDoneWords = doneWords;
+    const newDoneWords = [...doneWords];
     for (let i = 0; i < words.length - 1; i++) {
       const word = words[i];
-      const currentWord = testState.words[newDoneWords.length];
-      newDoneWords = [...doneWords, word === currentWord];
+      newDoneWords.push(word);
       if (newDoneWords.length === testState.words.length) {
         finishTest(currentTestState, newDoneWords);
         return;
