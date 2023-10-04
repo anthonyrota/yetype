@@ -1,4 +1,4 @@
-type Quote = {
+export type Quote = {
   id: string;
   text: string;
 };
@@ -18,7 +18,7 @@ export const quotes: Quote[] = [
   },
   {
     id: '1de6511a-4ad4-4de8-8ae2-3f0117d751c3',
-    text: "People are going to look at this interview and say 'Hey I understand what he's on about'. I don't like Kanye, he looks mad, I don't like his teeth. They're going to say 'why doesn't he just focus on music?' 'We like the old Kanye'. One thing they will do? They will play this interview in five years… They will play this interview in ten years.",
+    text: "People are going to look at this interview and say 'Hey I understand what he's on about'. I don't like Kanye, he looks mad, I don't like his teeth. They're going to say 'why doesn't he just focus on music?' 'We like the old Kanye'. One thing they will do? They will play this interview in five years... They will play this interview in ten years.",
   },
   {
     id: '2f65f63d-0e32-44f9-8fe6-8c818b2bd262',
@@ -289,3 +289,5 @@ export const quotes: Quote[] = [
     text: "I know everybody's asking the question, they wanted to know \"I know he's going to wild out, I know he's going to do something crazy\". Everybody wants to know what I would do if I didn't win. I guess we'll never know",
   },
 ];
+
+export const quoteIds = new Set(quotes.map((quote) => quote.id));

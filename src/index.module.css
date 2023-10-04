@@ -19,6 +19,7 @@
   --light-text-accent-color: #555;
   --main-hover-bg-color: #ffd1da;
   --border: 1px solid #ffd1da;
+  --hard-border: 1px solid #000;
   --caret-color: #000;
 }
 
@@ -28,6 +29,7 @@
   --light-text-accent-color: #ddd;
   --main-hover-bg-color: #434343;
   --border: 1px solid #434343;
+  --hard-border: 1px solid #fff;
   --caret-color: #e2b714;
 }
 

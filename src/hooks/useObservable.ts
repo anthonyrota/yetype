@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 // TODO: Here the observable cannot change.
+// TODO: Really guarding against null here is bad and I should just make a Maybe<T> type but I cbb.
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function useObservable<T>(observable: BehaviorSubject<T>, isTheSame?: (oldValue: T, newValue: T) => boolean): T;
 // eslint-disable-next-line @typescript-eslint/ban-types

@@ -57,12 +57,12 @@
   font-family: Courier, monospace;
 }
 
-.controls__restart {
+.controls__button {
   cursor: pointer;
 }
 
-.controls__restart:hover,
-.controls__restart:focus-visible {
+.controls__button:hover,
+.controls__button:focus-visible {
   color: var(--light-text-accent-color);
 }
 

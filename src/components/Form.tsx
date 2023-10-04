@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import { createContext, forwardRef, useContext, useId, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import styles from './Form.module.css';
 
@@ -85,7 +85,7 @@ export function InfoTitle(props: React.HTMLAttributes<HTMLDivElement>): JSX.Elem
 }
 
 export function InfoData(props: React.HTMLAttributes<HTMLParagraphElement>): JSX.Element {
-  return <p {...props} className={styles.info__data} />;
+  return <p {...props} className={[styles.info__data, props.className].filter(Boolean).join(' ')} />;
 }
 
 export function LabeledInfoData(props: React.HTMLAttributes<HTMLParagraphElement> & { label: string }): JSX.Element {
@@ -101,8 +101,11 @@ export function LabeledInfoData(props: React.HTMLAttributes<HTMLParagraphElement
   );
 }
 
-export const InfoButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>((props, ref): JSX.Element => {
-  return <button {...props} className={styles.info__button} ref={ref} />;
+export const InfoButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { isInline?: boolean }>((props, ref): JSX.Element => {
+  const { isInline, className, ...buttonProps } = props;
+  return (
+    <button {...buttonProps} className={[styles.info__button, isInline && styles['info__button--inline'], className].filter(Boolean).join(' ')} ref={ref} />
+  );
 });
 
 export function InfoNavButton(props: { toRoute: string; children?: React.ReactNode }): JSX.Element {
@@ -123,4 +126,69 @@ export function InfoNavLink(props: { toRoute: string; children?: React.ReactNode
 
 export function InfoButtonLink(props: React.ButtonHTMLAttributes<HTMLButtonElement>): JSX.Element {
   return <button {...props} className={styles.info__link} />;
+}
+
+export type CheckboxState = Set<string | number>;
+
+type CheckboxContextValue = {
+  value: CheckboxState;
+  onChange: (newValue: CheckboxState) => void;
+};
+
+const CheckboxContext = createContext<CheckboxContextValue | null>(null);
+
+export function CheckboxGroup(props: {
+  label: string;
+  value: CheckboxState;
+  onChange: (newValue: CheckboxState) => void;
+  children: React.ReactNode;
+}): JSX.Element {
+  const labelId = useId();
+  const contextValue = useMemo((): CheckboxContextValue => {
+    return {
+      value: props.value,
+      onChange: props.onChange,
+    };
+  }, [props.value, props.onChange]);
+  return (
+    <div>
+      <span className={styles['checkbox-group__label']} id={labelId}>
+        {props.label}
+      </span>
+      <div className={styles['checkbox-group__container']} aria-labelledby={labelId}>
+        <CheckboxContext.Provider value={contextValue}>{props.children}</CheckboxContext.Provider>
+      </div>
+    </div>
+  );
+}
+
+export function Checkbox(props: { value: string | number; children: React.ReactNode }): JSX.Element {
+  const checkboxContextValue = useContext(CheckboxContext);
+  if (checkboxContextValue === null) {
+    throw new Error('Checkbox has no CheckboxGroup parent.');
+  }
+  const isChecked = checkboxContextValue.value.has(props.value);
+  return (
+    <label className={styles.checkbox}>
+      <input
+        className={styles.checkbox__input}
+        type="checkbox"
+        onChange={(event) => {
+          const newIsChecked = event.target.checked;
+          if (newIsChecked === isChecked) {
+            return;
+          }
+          const newState = new Set(checkboxContextValue.value);
+          if (newIsChecked) {
+            newState.add(props.value);
+          } else {
+            newState.delete(props.value);
+          }
+          checkboxContextValue.onChange(newState);
+        }}
+        checked={isChecked}
+      />
+      <span className={styles.checkbox__label}>{props.children}</span>
+    </label>
+  );
 }

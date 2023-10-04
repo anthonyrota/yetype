@@ -31,7 +31,7 @@ export function AccountPage(): JSX.Element | null {
       <LabeledInfoData label="Display Name">{displayName}</LabeledInfoData>
       <LabeledInfoData label="Email">{email}</LabeledInfoData>
       <InfoNavButton toRoute={Route.EditAccount}>Edit Account Details</InfoNavButton>
-      <InfoNavLink toRoute={Route.Stats}>See your stats</InfoNavLink>
+      <InfoNavLink toRoute={Route.History}>See your past tests</InfoNavLink>
       <InfoNavLink toRoute={Route.EditPassword}>Change your password</InfoNavLink>
       <InfoButtonLink onClick={logOut}>Logout</InfoButtonLink>
       <InfoNavLink toRoute={Route.DeleteAccount}>Delete your account</InfoNavLink>

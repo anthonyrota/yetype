@@ -41,6 +41,14 @@
   background-color: var(--secondary-background-color);
   padding: var(--padding) 0;
   margin-top: var(--padding-2-and-a-bit);
+  white-space: nowrap;
+}
+
+.info__button--inline {
+  display: inline-block;
+  width: auto;
+  margin-top: 0;
+  padding: var(--padding-half) var(--padding);
 }
 
 .form__submit-button:hover,
@@ -94,4 +102,66 @@
 }
 
 .info__data {
+}
+
+.checkbox-group__label {
+  color: var(--light-text-accent-color);
+}
+
+.checkbox-group__container {
+  margin-top: var(--padding-half);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--padding-and-a-bit);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.checkbox__input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  appearance: none;
+  background-color: var(--main-bg-color);
+  width: 1em;
+  height: 1em;
+  border: var(--hard-border);
+  outline: none;
+}
+
+.checkbox__input:checked {
+  border-color: rgb(100, 218, 251);
+  background-color: rgb(100, 218, 251);
+}
+
+.checkbox__input:checked::before {
+  content: '\2713';
+  color: #fff;
+}
+
+@supports selector(:has(*)) {
+  .checkbox:has(.checkbox__input:focus-visible) {
+    outline: 2px solid rgb(100, 218, 251);
+    outline-offset: 2px;
+  }
+}
+
+@supports not selector(:has(*)) {
+  .checkbox__input:focus-visible {
+    outline: 2px solid rgb(100, 218, 251);
+    outline-offset: 2px;
+  }
+}
+
+.checkbox__label {
+  user-select: none;
+  color: #fff;
+  white-space: nowrap;
+  color: var(--main-text-color);
 }

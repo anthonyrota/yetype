@@ -2,14 +2,14 @@ import { SoloReplayData, isValidSoloReplayData } from '../replayData.js';
 import {
   isValidCharactersTypedCorrectly,
   isValidCharactersTypedIncorrectly,
+  isValidQuoteId,
   isValidSecondsTaken,
-  isValidUuid,
   isValidWordsTypedCorrectly,
   isValidWordsTypedIncorrectly,
   normalizeCharactersTypedCorrectly,
   normalizeCharactersTypedIncorrectly,
+  normalizeQuoteId,
   normalizeSecondsTaken,
-  normalizeUuid,
   normalizeWordsTypedCorrectly,
   normalizeWordsTypedIncorrectly,
 } from '../verification.js';
@@ -49,14 +49,14 @@ export function getValidSaveSoloQuoteRequest(body: unknown): SaveSoloQuoteReques
   ) {
     return null;
   }
-  const normalizedQuoteId = normalizeUuid(quoteId);
+  const normalizedQuoteId = normalizeQuoteId(quoteId);
   const normalizedSecondsTaken = normalizeSecondsTaken(secondsTaken);
   const normalizedCharactersTypedCorrectly = normalizeCharactersTypedCorrectly(charactersTypedCorrectly);
   const normalizedCharactersTypedIncorrectly = normalizeCharactersTypedIncorrectly(charactersTypedIncorrectly);
   const normalizedWordsTypedCorrectly = normalizeWordsTypedCorrectly(wordsTypedCorrectly);
   const normalizedWordsTypedIncorrectly = normalizeWordsTypedIncorrectly(wordsTypedIncorrectly);
   if (
-    !isValidUuid(normalizedQuoteId) ||
+    !isValidQuoteId(normalizedQuoteId) ||
     !isValidSecondsTaken(normalizedSecondsTaken) ||
     !isValidCharactersTypedCorrectly(normalizedCharactersTypedCorrectly) ||
     !isValidCharactersTypedIncorrectly(normalizedCharactersTypedIncorrectly) ||

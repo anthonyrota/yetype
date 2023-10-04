@@ -4,15 +4,15 @@ import { Header } from './components/Header.js';
 import { useObservable } from './hooks/useObservable.js';
 import styles from './index.module.css';
 import { AccountPage } from './pages/account.js';
-import { DeleteAccountPage } from './pages/deleteAccount.js';
+import { DeleteAccountPage } from './pages/deleteAccount/index.js';
 import { EditAccountPage } from './pages/editAccount.js';
 import { EditPasswordPage } from './pages/editPassword.js';
 import { ForgotPasswordPage } from './pages/forgotPassword.js';
+import { HistoryPage } from './pages/history/index.js';
 import { LocalTypePage } from './pages/localType/index.js';
 import { LogInPage } from './pages/logIn.js';
 import { NotFoundPage } from './pages/notFound.js';
 import { SignUpPage } from './pages/signUp.js';
-import { StatsPage } from './pages/stats.js';
 import { verifyAuthenticatedUser } from './persistedState/authenticatedUser.js';
 import { Theme, theme$ } from './persistedState/theme.js';
 import { Route } from './routes.js';
@@ -90,9 +90,9 @@ const router = createBrowserRouter([
         element: <DeleteAccountPage />,
       },
       {
-        path: Route.Stats.slice(1),
+        path: Route.History.slice(1),
         caseSensitive: true,
-        element: <StatsPage />,
+        element: <HistoryPage />,
       },
       {
         path: '*',

@@ -7,5 +7,5 @@ export const Route = {
   EditAccount: '/editaccount',
   EditPassword: '/editpassword',
   DeleteAccount: '/deleteaccount',
-  Stats: '/stats',
+  History: '/history',
 };

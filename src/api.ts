@@ -1,4 +1,4 @@
-import { Observable, from, identity, map, of, retry, skip, switchMap, takeUntil, throwError } from 'rxjs';
+import { Observable, filter, from, identity, of, retry, skip, switchMap, takeUntil, throwError } from 'rxjs';
 import { fromFetch } from 'rxjs/fetch';
 import { userAuthenticationStatus$ } from './persistedState/authenticatedUser.js';
 
@@ -34,7 +34,7 @@ export function makeApiRequest<ResponseJson>(path: string, parameters: ApiReques
       : takeUntil(
           userAuthenticationStatus$.pipe(
             skip(1),
-            map((newUserAuthenticationStatus) => newUserAuthenticationStatus.authenticatedUser?.token !== token),
+            filter((newUserAuthenticationStatus) => newUserAuthenticationStatus.authenticatedUser?.token !== token),
           ),
         ),
   );

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Observable, skip } from 'rxjs';
 import { makeApiRequest } from '../../api.js';
 import { commonWords } from '../../commonWords.js';
@@ -6,8 +7,10 @@ import { InfoButton } from '../../components/Form.js';
 import { useObservable } from '../../hooks/useObservable.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { resetAuthenticatedUser, userAuthenticationStatus$ } from '../../persistedState/authenticatedUser.js';
-import { TestConfig, TypingTestType, testConfig$ } from '../../persistedState/testConfig.js';
-import { quotes } from '../../quotes.js';
+import { TestConfig, testConfig$ } from '../../persistedState/testConfig.js';
+import { Quote, quotes } from '../../quotes.js';
+import { roundTo1Dp } from '../../rounding.js';
+import { Route } from '../../routes.js';
 import {
   SaveSoloQuoteRequest,
   SaveSoloQuoteResponse,
@@ -26,8 +29,19 @@ import {
   isValidSaveSoloRandomWordsResponseJson,
   saveSoloRandomWordsEndpoint,
 } from '../../server/apiEndpoints/saveSoloRandomWordsIo.js';
-import { SoloReplayData, SoloReplayDataEdit } from '../../server/replayData.js';
-import { maxCharacters, maxWords } from '../../server/verification.js';
+import { SoloReplayData, SoloReplayDataEdit, isValidSoloReplayData } from '../../server/replayData.js';
+import {
+  isValidCharactersTypedCorrectly,
+  isValidCharactersTypedIncorrectly,
+  isValidQuoteId,
+  isValidSecondsTaken,
+  isValidWordsTypedCorrectly,
+  isValidWordsTypedIncorrectly,
+  maxCharacters,
+  maxWords,
+} from '../../server/verification.js';
+import { TypingTestType } from '../../TypingTestType.js';
+import { calculateTestDataToShowToUser } from './calculateTestDataToShowToUser.js';
 import { getOneEditDiff } from './getOneEditDiff.js';
 import styles from './index.module.css';
 
@@ -98,7 +112,7 @@ function makeRandomWordList(numWords: number): string[] {
   return words;
 }
 
-function makeBeforeStartTestState(testConfig: TestConfig): TestState {
+function makeBeforeStartTestState(testConfig: TestConfig, quoteId: string | null): TestState {
   switch (testConfig.type) {
     case TypingTestType.Timed: {
       return {
@@ -114,7 +128,16 @@ function makeBeforeStartTestState(testConfig: TestConfig): TestState {
       };
     }
     case TypingTestType.Quote: {
-      const quote = selectRandomFromArray(quotes);
+      let quote: Quote;
+      if (quoteId === null) {
+        quote = selectRandomFromArray(quotes);
+      } else {
+        const quoteMaybe = quotes.find((quote) => quote.id === quoteId);
+        if (quoteMaybe === undefined) {
+          throw new Error(`No quote with id ${quoteId} exists.`);
+        }
+        quote = quoteMaybe;
+      }
       return {
         type: TestStateType.BeforeStart,
         words: quote.text.split(/\s+/g),
@@ -217,10 +240,110 @@ function findFirstAtOrAfterIndex<T>(array: T[], predicate: (value: T, i: number)
 
 const totalLines = 3;
 
+export const enum LocalTypeNavigationStateType {
+  PlayQuote,
+  TimeTravel,
+}
+
+export type LocalTypeNavigationState =
+  | {
+      type: LocalTypeNavigationStateType.PlayQuote;
+      quoteId: string;
+    }
+  | {
+      type: LocalTypeNavigationStateType.TimeTravel;
+      words: string[];
+      quoteId?: string;
+      replayData: SoloReplayData;
+      charactersTypedCorrectly: number;
+      charactersTypedIncorrectly: number;
+      wordsTypedCorrectly: number;
+      wordsTypedIncorrectly: number;
+      secondsTaken: number;
+    };
+
+function isNavigationState(navigationState: unknown): navigationState is LocalTypeNavigationState {
+  if (typeof navigationState !== 'object' || navigationState === null) {
+    return false;
+  }
+  const { type } = navigationState as { type: unknown };
+  if (type === LocalTypeNavigationStateType.PlayQuote) {
+    const { quoteId } = navigationState as { quoteId: unknown };
+    return typeof quoteId === 'string' && isValidQuoteId(quoteId);
+  }
+  if (type === LocalTypeNavigationStateType.TimeTravel) {
+    const { words, quoteId, replayData, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } =
+      navigationState as {
+        words: unknown;
+        quoteId: unknown;
+        replayData: unknown;
+        charactersTypedCorrectly: unknown;
+        charactersTypedIncorrectly: unknown;
+        wordsTypedCorrectly: unknown;
+        wordsTypedIncorrectly: unknown;
+        secondsTaken: unknown;
+      };
+    return (
+      Array.isArray(words) &&
+      words.every((word) => typeof word === 'string') &&
+      (quoteId === undefined || (typeof quoteId === 'string' && isValidQuoteId(quoteId))) &&
+      isValidSoloReplayData(replayData) &&
+      typeof charactersTypedCorrectly === 'number' &&
+      isValidCharactersTypedCorrectly(charactersTypedCorrectly) &&
+      typeof charactersTypedIncorrectly === 'number' &&
+      isValidCharactersTypedIncorrectly(charactersTypedIncorrectly) &&
+      typeof wordsTypedCorrectly === 'number' &&
+      isValidWordsTypedCorrectly(wordsTypedCorrectly) &&
+      typeof wordsTypedIncorrectly === 'number' &&
+      isValidWordsTypedIncorrectly(wordsTypedIncorrectly) &&
+      typeof secondsTaken === 'number' &&
+      isValidSecondsTaken(secondsTaken)
+    );
+  }
+  return false;
+}
+
 export function LocalTypePage(): JSX.Element {
   useTitle('YeType');
   const testConfig = useObservable(testConfig$);
-  const [testState, setTestState] = useState(() => makeBeforeStartTestState(testConfig));
+  const location = useLocation();
+  const locationState: unknown = location.state;
+  let initialQuoteId: string | null = null;
+  let initialTestState: TestState | null = null;
+  if (isNavigationState(locationState)) {
+    switch (locationState.type) {
+      case LocalTypeNavigationStateType.PlayQuote: {
+        const { quoteId } = locationState;
+        if (testConfig.type === TypingTestType.Quote) {
+          initialQuoteId = quoteId;
+        }
+        break;
+      }
+      case LocalTypeNavigationStateType.TimeTravel: {
+        const { words, quoteId, replayData, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } =
+          locationState;
+        if (testConfig.type === TypingTestType.Quote ? quoteId === undefined : quoteId !== undefined) {
+          break;
+        }
+        initialTestState = {
+          type: TestStateType.TimeTravel,
+          words,
+          quoteId,
+          replayData,
+          startTime: new Date(),
+          charactersTypedCorrectly,
+          charactersTypedIncorrectly,
+          wordsTypedCorrectly,
+          wordsTypedIncorrectly,
+          secondsTaken,
+          isEnded: false,
+        };
+        break;
+      }
+    }
+  }
+  const [specificQuoteId, setSpecificQuoteId] = useState<string | null>(initialQuoteId);
+  const [testState, setTestState] = useState(() => initialTestState ?? makeBeforeStartTestState(testConfig, specificQuoteId));
   const [firstLineStartIndex, setFirstLineStartIndex] = useState(0);
   const [lineEndIndices, setLineEndIndices] = useState<number[] | null>(null);
   const [doneWords, setDoneWords] = useState<string[]>([]);
@@ -228,8 +351,11 @@ export function LocalTypePage(): JSX.Element {
   const [inputText, setInputText] = useState('');
   const replayDataRef = useRef<SoloReplayData>([]);
   const wordsElementRef = useRef<HTMLDivElement>(null);
-  const restart = (newTestConfig: TestConfig): void => {
-    const newTestState = makeBeforeStartTestState(newTestConfig);
+  const restart = (newTestConfig: TestConfig, newSpecificQuoteId: string | null): void => {
+    if (newTestConfig.type !== TypingTestType.Quote) {
+      setSpecificQuoteId(null);
+    }
+    const newTestState = makeBeforeStartTestState(newTestConfig, newSpecificQuoteId);
     const newDoneWords: string[] = [];
     setTestState(newTestState);
     setFirstLineStartIndex(0);
@@ -243,6 +369,24 @@ export function LocalTypePage(): JSX.Element {
   useEffect(() => {
     lineEndIndicesRef.current = lineEndIndices;
   }, [lineEndIndices]);
+  const endTimeTravel = (): void => {
+    if (testState.type !== TestStateType.TimeTravel) {
+      throw new Error("Can't cancel time travel when not time traveling");
+    }
+    const newTestState: TestState = {
+      ...testState,
+      isEnded: true,
+    };
+    if ('quoteId' in testState) {
+      newTestState.quoteId = testState.quoteId;
+    }
+    setTestState(newTestState);
+    setFirstLineStartIndex(0);
+    setLineEndIndices(null);
+    setDoneWords([]);
+    setTestInfo('');
+    setInputText('');
+  };
   useEffect(() => {
     if (testState.type !== TestStateType.TimeTravel) {
       return;
@@ -258,21 +402,7 @@ export function LocalTypePage(): JSX.Element {
       const millisecondsPassed = Date.now() - startTime.getTime();
       if (lastEditIndex === replayData.length - 1) {
         isDone = true;
-        cancelId = window.setTimeout(() => {
-          const newTestState: TestState = {
-            ...testState,
-            isEnded: true,
-          };
-          if ('quoteId' in testState) {
-            newTestState.quoteId = testState.quoteId;
-          }
-          setTestState(newTestState);
-          setFirstLineStartIndex(0);
-          setLineEndIndices(null);
-          setDoneWords([]);
-          setTestInfo('');
-          setInputText('');
-        }, 200);
+        cancelId = window.setTimeout(endTimeTravel, 200);
         return;
       }
       const newLastEditIndex = findFirstAtOrAfterIndex(
@@ -303,6 +433,7 @@ export function LocalTypePage(): JSX.Element {
       setDoneWords(newDoneWords);
       setInputText(currentWord);
       testPushNextLine(newDoneWords.length, lineEndIndicesRef.current);
+      setTestInfo(getTestInfo(testConfig, testState, newDoneWords.length));
       cancelId = requestAnimationFrame(step);
     };
     let cancelId = requestAnimationFrame(step);
@@ -317,13 +448,13 @@ export function LocalTypePage(): JSX.Element {
   useEffect(() => {
     const subscription = testConfig$.pipe(skip(1)).subscribe({
       next(newTestConfig) {
-        restart(newTestConfig);
+        restart(newTestConfig, specificQuoteId);
       },
     });
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [specificQuoteId]);
   const finishTest = (testState: InProgressTestState, doneWords: string[]): void => {
     const newTestState: TestState = {
       type: TestStateType.Ended,
@@ -366,7 +497,7 @@ export function LocalTypePage(): JSX.Element {
       case TypingTestType.Timed: {
         const { timeLimit } = testConfig;
         const request: SaveSoloRandomTimedRequest = {
-          words: testState.words.slice(doneWords.length).join(' '),
+          words: testState.words.slice(0, doneWords.length).join(' '),
           testTimeSeconds: timeLimit,
           charactersTypedCorrectly,
           charactersTypedIncorrectly,
@@ -384,7 +515,7 @@ export function LocalTypePage(): JSX.Element {
       case TypingTestType.WordLimit: {
         const { wordLimit } = testConfig;
         const request: SaveSoloRandomWordsRequest = {
-          words: testState.words.slice(doneWords.length).join(' '),
+          words: testState.words.slice(0, doneWords.length).join(' '),
           testWordLimit: wordLimit,
           secondsTaken,
           charactersTypedCorrectly,
@@ -636,18 +767,7 @@ export function LocalTypePage(): JSX.Element {
     testPushNextLine(newDoneWords.length);
     setInputText(words[words.length - 1]);
     setDoneWords(newDoneWords);
-  };
-  const onRestartClick = () => {
-    restart(testConfig);
-  };
-  const onRestartKeyUp = (e: React.KeyboardEvent) => {
-    if (e.code === 'Space') {
-      e.preventDefault();
-    }
-  };
-  const restartButtonProps: React.ButtonHTMLAttributes<HTMLButtonElement> = {
-    onClick: onRestartClick,
-    onKeyUp: onRestartKeyUp,
+    setTestInfo(getTestInfo(testConfig, testState, newDoneWords.length));
   };
   let mainElement: JSX.Element;
   if (testState.type === TestStateType.Ended || (testState.type === TestStateType.TimeTravel && testState.isEnded)) {
@@ -672,24 +792,68 @@ export function LocalTypePage(): JSX.Element {
       setFirstLineStartIndex(0);
       setLineEndIndices(null);
       setDoneWords([]);
-      setTestInfo('');
+      setTestInfo(getTestInfo(testConfig, newTestState, 0));
       setInputText('');
     };
-    mainElement = <Result data={endedTestData} restartButtonProps={restartButtonProps} restartButtonRef={restartRef} onTimeTravelClick={onTimeTravelClick} />;
+    mainElement = (
+      <Result
+        data={endedTestData}
+        restartButtonProps={{
+          onClick: () => {
+            setSpecificQuoteId(null);
+            restart(testConfig, null);
+          },
+          onKeyUp: (e: React.KeyboardEvent) => {
+            if (e.code === 'Space') {
+              e.preventDefault();
+            }
+          },
+        }}
+        restartButtonRef={restartRef}
+        onTimeTravelClick={onTimeTravelClick}
+        makeSpecificQuote={() => {
+          if (testConfig.type !== TypingTestType.Quote) {
+            throw new Error('Test type should be quote.');
+          }
+          if (testState.quoteId === undefined) {
+            throw new Error('Expected quote id.');
+          }
+          setSpecificQuoteId(testState.quoteId);
+          restart(testConfig, testState.quoteId);
+        }}
+      />
+    );
   } else {
+    const isTimeTravel = testState.type === TestStateType.TimeTravel;
     mainElement = (
       <div className={styles.controls}>
-        <input
-          className={styles.controls__input}
-          value={inputText}
-          onChange={onInputChange}
-          ref={inputRef}
-          disabled={testState.type === TestStateType.TimeTravel}
-        />
+        <input className={styles.controls__input} value={inputText} onChange={onInputChange} ref={inputRef} disabled={isTimeTravel} />
         <div className={styles.controls__info}>{testInfo}</div>
-        <button className={styles.controls__restart} {...restartButtonProps} ref={restartRef}>
+        <button
+          className={styles.controls__button}
+          onClick={() => {
+            restart(testConfig, specificQuoteId);
+          }}
+          ref={restartRef}
+        >
           New Test
         </button>
+        {isTimeTravel && (
+          <button className={styles.controls__button} onClick={endTimeTravel}>
+            Back
+          </button>
+        )}
+        {!isTimeTravel && specificQuoteId !== null && (
+          <button
+            className={styles.controls__button}
+            onClick={() => {
+              setSpecificQuoteId(null);
+              restart(testConfig, null);
+            }}
+          >
+            Clear Quote
+          </button>
+        )}
       </div>
     );
   }
@@ -701,32 +865,42 @@ export function LocalTypePage(): JSX.Element {
   );
 }
 
-function roundTo1Dp(num: number): string {
-  return String(Math.round((num + Number.EPSILON) * 10) / 10);
-}
-
-function roundTo2Dp(num: number): string {
-  return String(Math.round((num + Number.EPSILON) * 100) / 100);
-}
-
 function Result(props: {
   data: EndedTestData;
   restartButtonProps: React.ButtonHTMLAttributes<HTMLButtonElement>;
   restartButtonRef: React.RefObject<HTMLButtonElement>;
   onTimeTravelClick: () => void;
+  makeSpecificQuote: () => void;
 }): JSX.Element {
-  const { data, restartButtonProps, restartButtonRef, onTimeTravelClick } = props;
+  const { data, restartButtonProps, restartButtonRef, onTimeTravelClick, makeSpecificQuote } = props;
   const { testConfig, testState, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = data;
-  const wpm = Math.floor((charactersTypedCorrectly * 12) / secondsTaken);
-  const totalCharacters = charactersTypedIncorrectly + charactersTypedCorrectly;
-  const totalWords = wordsTypedIncorrectly + wordsTypedCorrectly;
-  const accuracy = roundTo2Dp((charactersTypedCorrectly / totalCharacters) * 100);
-  let quoteRepeatButton: JSX.Element | null = null;
+  const { wpm, totalCharacters, totalWords, accuracy } = calculateTestDataToShowToUser({
+    charactersTypedCorrectly,
+    charactersTypedIncorrectly,
+    wordsTypedCorrectly,
+    wordsTypedIncorrectly,
+    secondsTaken,
+  });
+  let maybeQuoteFragment: JSX.Element | null = null;
+  const navigate = useNavigate();
   if (testConfig.type === TypingTestType.Quote) {
     if (testState.quoteId === undefined) {
       throw new Error('Expected quote id.');
     }
-    quoteRepeatButton = <InfoButton>Repeat Quote</InfoButton>;
+    maybeQuoteFragment = (
+      <>
+        <InfoButton onClick={makeSpecificQuote}>Repeat Quote</InfoButton>
+        <InfoButton
+          onClick={() => {
+            navigate(Route.History, {
+              state: testState.quoteId,
+            });
+          }}
+        >
+          See Quote History
+        </InfoButton>
+      </>
+    );
   }
   return (
     <div className={styles.result__container}>
@@ -770,7 +944,7 @@ function Result(props: {
         <InfoButton {...restartButtonProps} ref={restartButtonRef}>
           New Test
         </InfoButton>
-        {quoteRepeatButton}
+        {maybeQuoteFragment}
         <InfoButton onClick={onTimeTravelClick}>Time Travel</InfoButton>
       </div>
     </div>

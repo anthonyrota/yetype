@@ -1,3 +1,5 @@
+import { quoteIds } from '../quotes.js';
+
 const userNameRegex = /^[a-z][a-z0-9]{0,30}$/;
 export function isValidUserName(string: string): boolean {
   return userNameRegex.test(string);
@@ -66,6 +68,12 @@ export function isValidTestWordLimit(testWordLimit: number): boolean {
 }
 export function normalizeTestWordLimit(testWordLimit: number): number {
   return testWordLimit;
+}
+export function normalizeQuoteId(string: string): string {
+  return string.normalize();
+}
+export function isValidQuoteId(quoteId: string): boolean {
+  return isValidUuid(quoteId) && quoteIds.has(quoteId);
 }
 export function isValidWords(words: string): boolean {
   return words.length >= 1 && words.length <= maxCharacters;

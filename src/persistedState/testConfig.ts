@@ -1,4 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
+import { TypingTestType } from '../TypingTestType.js';
 import { typingSettingsStorageKey } from './storageKeys.js';
 
 export const enum TypingTestTimeLimits {
@@ -11,12 +12,6 @@ export const enum TypingTestWordLimits {
   Ten = 10,
   Forty = 40,
   TwoHundred = 200,
-}
-
-export const enum TypingTestType {
-  Timed = 'timed',
-  WordLimit = 'wordLimit',
-  Quote = 'quote',
 }
 
 export const validTypingTestTimeLimits = [TypingTestTimeLimits.Fifteen, TypingTestTimeLimits.Sixty, TypingTestTimeLimits.OneTwenty];

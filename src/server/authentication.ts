@@ -65,7 +65,7 @@ export const enum VerificationCodeValidity {
 }
 
 export function getVerificationCodeValidity(updatedVerificationCodeAttempts: number, createdAt: Date): VerificationCodeValidity {
-  if (new Date().getTime() - createdAt.getTime() > verificationCodeTimeWindowInSeconds * 1000) {
+  if (Date.now() - createdAt.getTime() > verificationCodeTimeWindowInSeconds * 1000) {
     return VerificationCodeValidity.IsNotValid;
   }
   if (updatedVerificationCodeAttempts === maxVerificationCodeAttempts) {
@@ -77,14 +77,14 @@ export function getVerificationCodeValidity(updatedVerificationCodeAttempts: num
   return VerificationCodeValidity.IsValid;
 }
 
-interface AuthenticationTokenJson {
+type AuthenticationTokenJson = {
   id: string;
   pwd: string;
-}
-interface ParsedToken {
+};
+type ParsedToken = {
   encryptedAuthenticationToken: string;
   tag: string;
-}
+};
 const authenticationAesKey = crypto.createHash('sha256').update(authenticationAesSecretKey).digest('hex').substring(0, 32);
 const authenticationAesIv = crypto.createHash('sha256').update(authenticationAesSecretIv).digest('hex').substring(0, 16);
 function encryptAuthenticationAes(string: string): string {
@@ -188,7 +188,7 @@ export async function useAuthentication(req: import('express').Request): Promise
   const userId = row.user_id;
   const createdAt = row.created_at;
   const isCorrect = await verifyScrypt(pwdHashed, pwd);
-  if (isCorrect && new Date().getTime() - createdAt.getTime() <= maxSessionTimeFromCreatedAtInSeconds) {
+  if (isCorrect && Date.now() - createdAt.getTime() <= maxSessionTimeFromCreatedAtInSeconds * 1000) {
     return {
       sessionId: id,
       userId,

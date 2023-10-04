@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { makeApiRequest } from '../api.js';
+import { makeApiRequest } from '../../api.js';
 import {
   Form,
   FormErrorMessage,
@@ -11,20 +11,21 @@ import {
   InfoData,
   formErrorMessages,
   makeFormInputHandler,
-} from '../components/Form.js';
-import { ReauthenticateForm } from '../components/ReauthenticateForm.js';
-import { useAuthenticationGuard } from '../hooks/useAuthenticationGuard.js';
-import { useTitle } from '../hooks/useTitle.js';
-import { AuthenticatedUser, resetAuthenticatedUser } from '../persistedState/authenticatedUser.js';
-import { Route } from '../routes.js';
-import { ChangePasswordVerifyRequest } from '../server/apiEndpoints/changePasswordVerifyIo.js';
-import { DeleteAccountResponseType, deleteAccountEndpoint, isValidDeleteAccountResponseJson } from '../server/apiEndpoints/deleteAccountIo.js';
+} from '../../components/Form.js';
+import { ReauthenticateForm } from '../../components/ReauthenticateForm.js';
+import { useAuthenticationGuard } from '../../hooks/useAuthenticationGuard.js';
+import { useTitle } from '../../hooks/useTitle.js';
+import { AuthenticatedUser, resetAuthenticatedUser } from '../../persistedState/authenticatedUser.js';
+import { Route } from '../../routes.js';
+import { ChangePasswordVerifyRequest } from '../../server/apiEndpoints/changePasswordVerifyIo.js';
+import { DeleteAccountResponseType, deleteAccountEndpoint, isValidDeleteAccountResponseJson } from '../../server/apiEndpoints/deleteAccountIo.js';
 import {
   DeleteAccountVerifyResponseType,
   deleteAccountVerifyEndpoint,
   isValidDeleteAccountVerifyResponseJson,
-} from '../server/apiEndpoints/deleteAccountVerifyIo.js';
-import { getUserNameErrorFeedback } from '../server/verification.js';
+} from '../../server/apiEndpoints/deleteAccountVerifyIo.js';
+import { getUserNameErrorFeedback } from '../../server/verification.js';
+import styles from './index.module.css';
 
 const enum DeleteAccountStateType {
   FillingDeleteAccount,
@@ -142,7 +143,7 @@ export function DeleteAccountForm(props: {
       </FormLabelInputPair>
       {!isSubmitting && state.errorMessage !== null && <FormErrorMessage>{state.errorMessage}</FormErrorMessage>}
       <FormSubmitButton disabled={isSubmitting}>Delete Account</FormSubmitButton>
-      <InfoData>Warning: This action is permanent and irreversible!</InfoData>
+      <InfoData className={styles.info}>Warning: This action is permanent and irreversible!</InfoData>
       <FormNavLink toRoute={Route.Account}>Cancel</FormNavLink>
     </Form>
   );

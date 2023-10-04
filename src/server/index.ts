@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import url from 'url';
+import compression from 'compression';
 import express from 'express';
 import { Route } from '../routes.js';
 import { handleChangeAccountDetails } from './apiEndpoints/changeAccountDetails.js';
@@ -21,6 +22,8 @@ import { handleForgotPassword } from './apiEndpoints/forgotPassword.js';
 import { forgotPasswordEndpoint } from './apiEndpoints/forgotPasswordIo.js';
 import { handleForgotPasswordVerify } from './apiEndpoints/forgotPasswordVerify.js';
 import { forgotPasswordVerifyEndpoint } from './apiEndpoints/forgotPasswordVerifyIo.js';
+import { handleGetPastTests } from './apiEndpoints/getPastTests.js';
+import { getPastTestsEndpoint } from './apiEndpoints/getPastTestsIo.js';
 import { handleLogIn } from './apiEndpoints/logIn.js';
 import { logInEndpoint } from './apiEndpoints/logInIo.js';
 import { handleLogOut } from './apiEndpoints/logOut.js';
@@ -62,6 +65,8 @@ Object.values(Route).forEach((path) => {
   });
 });
 
+app.use(compression());
+
 app.get(`/${jsFileName}`, (_req, res) => {
   res.sendFile(jsFilePath);
 });
@@ -81,6 +86,7 @@ app.post(deleteAccountEndpoint, handleDeleteAccount);
 app.post(deleteAccountVerifyEndpoint, handleDeleteAccountVerify);
 app.post(forgotPasswordEndpoint, handleForgotPassword);
 app.post(forgotPasswordVerifyEndpoint, handleForgotPasswordVerify);
+app.post(getPastTestsEndpoint, handleGetPastTests);
 app.post(logInEndpoint, handleLogIn);
 app.post(logOutEndpoint, handleLogOut);
 app.post(reauthenticateEndpoint, handleReauthenticate);
