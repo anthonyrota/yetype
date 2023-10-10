@@ -1,4 +1,4 @@
-import { TypingTestType } from '../../TypingTestType.js';
+import { TypingTestType } from '../../persistedState/testConfigTypes.js';
 import { SoloReplayData, isValidSoloReplayData } from '../replayData.js';
 import {
   isValidCharactersTypedCorrectly,
@@ -80,7 +80,7 @@ export function getValidGetPastTestsRequest(body: unknown): GetPastTestsRequest 
   if (
     (direction !== GetPastTestsCursorDirection.Before && direction !== GetPastTestsCursorDirection.After) ||
     typeof time !== 'number' ||
-    time <= 1696158975621 ||
+    time <= 1695000000000 ||
     time >= Date.now()
   ) {
     return null;

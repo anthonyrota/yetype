@@ -1,9 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
-import compression from 'compression';
-import express from 'express';
-import { Route } from '../routes.js';
 import { handleChangeAccountDetails } from './apiEndpoints/changeAccountDetails.js';
 import { changeAccountDetailsEndpoint } from './apiEndpoints/changeAccountDetailsIo.js';
 import { handleChangeAccountDetailsVerify } from './apiEndpoints/changeAccountDetailsVerify.js';
@@ -43,58 +37,29 @@ import { signUpVerifyEndpoint } from './apiEndpoints/signUpVerifyIo.js';
 import { handleVerifyAuth } from './apiEndpoints/verifyAuth.js';
 import { verifyAuthEndpoint } from './apiEndpoints/verifyAuthIo.js';
 
-const __filename = url.fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express();
-app.set('case sensitive routing', true);
-app.disable('x-powered-by');
-
-const publicFolderPath = path.join(__dirname, '..', '..', 'public');
-const files = fs.readdirSync(publicFolderPath);
-const jsFileName = files.find((file) => file.endsWith('.js'));
-if (jsFileName === undefined) {
-  throw new Error('No js file found.');
+export function setAppConfig(app: import('express').Application): void {
+  app.set('case sensitive routing', true);
+  app.disable('x-powered-by');
 }
-const jsFilePath = path.join(publicFolderPath, jsFileName);
-const indexHtmlFilePath = path.join(publicFolderPath, 'index.html');
 
-Object.values(Route).forEach((path) => {
-  app.get(path, (_req, res) => {
-    res.sendFile(indexHtmlFilePath);
-  });
-});
-
-app.use(compression());
-
-app.get(`/${jsFileName}`, (_req, res) => {
-  res.sendFile(jsFilePath);
-});
-
-app.get('*', (_req, res) => {
-  res.status(404).sendFile(indexHtmlFilePath);
-});
-
-app.use(express.json());
-
-app.post(changeAccountDetailsEndpoint, handleChangeAccountDetails);
-app.post(changeAccountDetailsVerifyEmailEndpoint, handleChangeAccountDetailsVerifyEmail);
-app.post(changeAccountDetailsVerifyEndpoint, handleChangeAccountDetailsVerify);
-app.post(changePasswordEndpoint, handleChangePassword);
-app.post(changePasswordVerifyEndpoint, handleChangePasswordVerify);
-app.post(deleteAccountEndpoint, handleDeleteAccount);
-app.post(deleteAccountVerifyEndpoint, handleDeleteAccountVerify);
-app.post(forgotPasswordEndpoint, handleForgotPassword);
-app.post(forgotPasswordVerifyEndpoint, handleForgotPasswordVerify);
-app.post(getPastTestsEndpoint, handleGetPastTests);
-app.post(logInEndpoint, handleLogIn);
-app.post(logOutEndpoint, handleLogOut);
-app.post(reauthenticateEndpoint, handleReauthenticate);
-app.post(saveSoloQuoteEndpoint, handleSaveSoloQuote);
-app.post(saveSoloRandomTimedEndpoint, handleSaveSoloRandomTimed);
-app.post(saveSoloRandomWordsEndpoint, handleSaveSoloRandomWords);
-app.post(signUpEndpoint, handleSignUp);
-app.post(signUpVerifyEndpoint, handleSignUpVerify);
-app.post(verifyAuthEndpoint, handleVerifyAuth);
-
-app.listen(3000);
+export function applyApiEndpoints(router: import('express').Router): void {
+  router.post(changeAccountDetailsEndpoint, handleChangeAccountDetails);
+  router.post(changeAccountDetailsVerifyEmailEndpoint, handleChangeAccountDetailsVerifyEmail);
+  router.post(changeAccountDetailsVerifyEndpoint, handleChangeAccountDetailsVerify);
+  router.post(changePasswordEndpoint, handleChangePassword);
+  router.post(changePasswordVerifyEndpoint, handleChangePasswordVerify);
+  router.post(deleteAccountEndpoint, handleDeleteAccount);
+  router.post(deleteAccountVerifyEndpoint, handleDeleteAccountVerify);
+  router.post(forgotPasswordEndpoint, handleForgotPassword);
+  router.post(forgotPasswordVerifyEndpoint, handleForgotPasswordVerify);
+  router.post(getPastTestsEndpoint, handleGetPastTests);
+  router.post(logInEndpoint, handleLogIn);
+  router.post(logOutEndpoint, handleLogOut);
+  router.post(reauthenticateEndpoint, handleReauthenticate);
+  router.post(saveSoloQuoteEndpoint, handleSaveSoloQuote);
+  router.post(saveSoloRandomTimedEndpoint, handleSaveSoloRandomTimed);
+  router.post(saveSoloRandomWordsEndpoint, handleSaveSoloRandomWords);
+  router.post(signUpEndpoint, handleSignUp);
+  router.post(signUpVerifyEndpoint, handleSignUpVerify);
+  router.post(verifyAuthEndpoint, handleVerifyAuth);
+}

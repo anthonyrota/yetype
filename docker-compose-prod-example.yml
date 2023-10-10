@@ -1,0 +1,47 @@
+services:
+  database:
+    container_name: yetype_prod_database_container
+    image: postgres:15.4-alpine
+    restart: unless-stopped
+    env_file: ./env/production-postgres.env
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+  node:
+    container_name: yetype_prod_node_container
+    image: yetype-api # ./api.dockerfile image. CI/CD automatically builds it.
+    restart: unless-stopped
+    env_file:
+      - ./env/production-postgres.env
+      - ./env/production.env
+    depends_on:
+      - database
+    networks:
+      - app-network
+  caddy:
+    container_name: yetype_prod_caddy_container
+    image: yetype-server # ./server.dockerfile image. CI/CD automatically builds it.
+    restart: unless-stopped
+    env_file: ./env/server.env
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - node
+    networks:
+      - app-network
+volumes:
+  database:
+    name: yetype_prod_database_volume
+  caddy_data:
+    name: yetype_prod_caddy_data_volume
+  caddy_config:
+    name: yetype_prod_caddy_config_volume
+networks:
+  app-network:
+    name: yetype_prod_app_network

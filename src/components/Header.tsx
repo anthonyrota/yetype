@@ -3,10 +3,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { distinctUntilChanged, map } from 'rxjs';
 import { useObservable } from '../hooks/useObservable.js';
 import { authenticatedUser$, userAuthenticationStatus$ } from '../persistedState/authenticatedUser.js';
-import { TestConfig, setTestConfig, testConfig$, validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfig.js';
+import { setTestConfig, testConfig$ } from '../persistedState/testConfig.js';
+import { TestConfig, TypingTestType, validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfigTypes.js';
 import { Theme, setTheme, theme$ } from '../persistedState/theme.js';
 import { Route } from '../routes.js';
-import { TypingTestType } from '../TypingTestType.js';
 import styles from './Header.module.css';
 
 function HeaderSection(props: { children?: React.ReactNode }): JSX.Element {

@@ -85,7 +85,7 @@ export function InfoTitle(props: React.HTMLAttributes<HTMLDivElement>): JSX.Elem
 }
 
 export function InfoData(props: React.HTMLAttributes<HTMLParagraphElement>): JSX.Element {
-  return <p {...props} className={[styles.info__data, props.className].filter(Boolean).join(' ')} />;
+  return <p {...props} />;
 }
 
 export function LabeledInfoData(props: React.HTMLAttributes<HTMLParagraphElement> & { label: string }): JSX.Element {

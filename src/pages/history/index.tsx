@@ -5,7 +5,8 @@ import { Checkbox, CheckboxGroup, CheckboxState, FormErrorMessage, InfoButton } 
 import { useAuthenticationGuard } from '../../hooks/useAuthenticationGuard.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { AuthenticatedUser, resetAuthenticatedUser } from '../../persistedState/authenticatedUser.js';
-import { setTestConfig, testConfig$, validTypingTestTimeLimits, validTypingTestWordLimits } from '../../persistedState/testConfig.js';
+import { setTestConfig, testConfig$ } from '../../persistedState/testConfig.js';
+import { TypingTestType, validTypingTestTimeLimits, validTypingTestWordLimits } from '../../persistedState/testConfigTypes.js';
 import { quotes } from '../../quotes.js';
 import { roundTo1Dp } from '../../rounding.js';
 import { Route } from '../../routes.js';
@@ -19,7 +20,6 @@ import {
   isValidGetPastTestsResponseJson,
 } from '../../server/apiEndpoints/getPastTestsIo.js';
 import { isValidQuoteId } from '../../server/verification.js';
-import { TypingTestType } from '../../TypingTestType.js';
 import { calculateTestDataToShowToUser } from '../localType/calculateTestDataToShowToUser.js';
 import { LocalTypeNavigationState, LocalTypeNavigationStateType } from '../localType/index.js';
 import styles from './index.module.css';
@@ -441,7 +441,7 @@ export function HistoryPageContent(props: { authenticatedUser: AuthenticatedUser
                       }
                       case TypingTestType.WordLimit: {
                         setTestConfig({
-                          type: TypingTestType.Timed,
+                          type: TypingTestType.WordLimit,
                           timeLimit: testConfig$.value.timeLimit,
                           wordLimit: test.testWordLimit,
                         });

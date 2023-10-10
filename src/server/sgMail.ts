@@ -1,4 +1,4 @@
 import sgMail from '@sendgrid/mail';
-import { sgApiKey } from './secrets.js';
+import { sgApiKey } from './env.js';
 sgMail.setApiKey(sgApiKey);
 export { sgMail };

@@ -1,3 +1,4 @@
+import { validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfigTypes.js';
 import { quoteIds } from '../quotes.js';
 
 const userNameRegex = /^[a-z][a-z0-9]{0,30}$/;
@@ -58,13 +59,13 @@ export const maxTestSeconds = 3600;
 export const maxWords = 2000;
 export const maxCharacters = 10000;
 export function isValidTestTimeSeconds(testTimeSeconds: number): boolean {
-  return Number.isInteger(testTimeSeconds) && testTimeSeconds >= 1 && testTimeSeconds <= maxTestSeconds;
+  return validTypingTestTimeLimits.includes(testTimeSeconds);
 }
 export function normalizeTestTimeSeconds(testTimeSeconds: number): number {
   return testTimeSeconds;
 }
 export function isValidTestWordLimit(testWordLimit: number): boolean {
-  return Number.isInteger(testWordLimit) && testWordLimit >= 1 && testWordLimit <= maxWords;
+  return validTypingTestWordLimits.includes(testWordLimit);
 }
 export function normalizeTestWordLimit(testWordLimit: number): number {
   return testWordLimit;

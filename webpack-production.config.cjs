@@ -1,18 +1,15 @@
-import path from 'path';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-export default {
-  mode: 'development',
+/** @type { import('webpack').Configuration } */
+const config = {
+  mode: 'production',
   entry: {
     index: './src/index.tsx',
   },
-  devtool: 'inline-source-map',
-  watch: true,
   module: {
     rules: [
       {
@@ -28,16 +25,13 @@ export default {
       {
         test: /\.css$/,
         use: [
-          {
-            loader: 'style-loader',
-            options: { injectType: 'singletonStyleTag' },
-          },
+          MiniCssExtractPlugin.loader,
           {
             loader: 'css-loader',
             options: {
               modules: {
                 auto: true,
-                localIdentName: '[path][name]__[local]--[hash:base64:5]',
+                localIdentName: '[hash:base64:5]',
               },
             },
           },
@@ -53,13 +47,29 @@ export default {
   },
   output: {
     filename: '[name].[contenthash].js',
-    path: path.resolve(__dirname, 'public'),
+    path: path.resolve(__dirname, 'docker-prod-output-static'),
     clean: true,
   },
   plugins: [
+    new MiniCssExtractPlugin(),
     new HtmlWebpackPlugin({
       title: 'YeType',
       template: 'htmlTemplate.ejs',
     }),
   ],
+  optimization: {
+    minimizer: [
+      new TerserPlugin({
+        extractComments: false,
+        terserOptions: {
+          format: {
+            comments: false,
+          },
+        },
+      }),
+      new CssMinimizerPlugin(),
+    ],
+  },
 };
+
+module.exports = config;

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { pool } from './db.js';
-import { authenticationAesSecretIv, authenticationAesSecretKey, authenticationVerificationSecretKey } from './secrets.js';
+import { authenticationAesSecretIv, authenticationAesSecretKey, authenticationVerificationSecretKey } from './env.js';
 
 export function doSha256(string: string): string {
   return crypto.createHash('sha256').update(string, 'utf8').digest().toString('hex');

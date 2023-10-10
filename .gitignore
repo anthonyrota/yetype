@@ -20,5 +20,7 @@ dist-ssr
 *.sw?
 *.hidden
 *.hidden.*
-secrets.ts
 public
+*.env
+!*-example.env
+docker-prod-output-*

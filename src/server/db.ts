@@ -1,9 +1,10 @@
 import pg from 'pg';
+import { postgresHost, postgresPassword, postgresUser } from './env.js';
 
 export const pool = new pg.Pool({
-  host: 'localhost',
-  user: 'postgres',
-  password: 'postgres',
+  host: postgresHost,
+  user: postgresUser,
+  password: postgresPassword,
 });
 
 export function isPgErrorUniqueViolationError(error: unknown): boolean {

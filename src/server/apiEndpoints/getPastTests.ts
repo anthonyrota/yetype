@@ -1,4 +1,4 @@
-import { TypingTestType } from '../../TypingTestType.js';
+import { TypingTestType } from '../../persistedState/testConfigTypes.js';
 import { useAuthentication } from '../authentication.js';
 import { pool } from '../db.js';
 import { isValidSoloReplayData } from '../replayData.js';
@@ -21,12 +21,13 @@ import {
   getValidGetPastTestsRequest,
 } from './getPastTestsIo.js';
 
-const numResults = 10;
+const numResults = 30;
 const maxFilters = 5;
 
 async function getGetPastTestsResponse(req: import('express').Request): Promise<GetPastTestsResponse> {
   const requestData = getValidGetPastTestsRequest(req.body);
   if (requestData === null) {
+    console.log(req.body);
     return { type: GetPastTestsResponseType.Fail };
   }
   const { cursor, inclusiveFilters } = requestData;

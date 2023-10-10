@@ -101,9 +101,6 @@
   margin-top: var(--padding-2);
 }
 
-.info__data {
-}
-
 .checkbox-group__label {
   color: var(--light-text-accent-color);
 }

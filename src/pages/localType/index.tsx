@@ -7,7 +7,8 @@ import { InfoButton } from '../../components/Form.js';
 import { useObservable } from '../../hooks/useObservable.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { resetAuthenticatedUser, userAuthenticationStatus$ } from '../../persistedState/authenticatedUser.js';
-import { TestConfig, testConfig$ } from '../../persistedState/testConfig.js';
+import { testConfig$ } from '../../persistedState/testConfig.js';
+import { TestConfig, TypingTestType } from '../../persistedState/testConfigTypes.js';
 import { Quote, quotes } from '../../quotes.js';
 import { roundTo1Dp } from '../../rounding.js';
 import { Route } from '../../routes.js';
@@ -40,7 +41,6 @@ import {
   maxCharacters,
   maxWords,
 } from '../../server/verification.js';
-import { TypingTestType } from '../../TypingTestType.js';
 import { calculateTestDataToShowToUser } from './calculateTestDataToShowToUser.js';
 import { getOneEditDiff } from './getOneEditDiff.js';
 import styles from './index.module.css';
@@ -840,7 +840,7 @@ export function LocalTypePage(): JSX.Element {
         </button>
         {isTimeTravel && (
           <button className={styles.controls__button} onClick={endTimeTravel}>
-            Back
+            End
           </button>
         )}
         {!isTimeTravel && specificQuoteId !== null && (
