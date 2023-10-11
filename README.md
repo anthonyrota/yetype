@@ -92,7 +92,7 @@ $ docker compose -f docker-compose-prod-example.yml up
 The application can be run on a VPS. SSH into the server and make sure docker and docker compose are installed. DO NOT clone the git repo. Create a folder `yetype` and copy [./docker-compose-prod-example.yml](docker-compose-prod-example.yml) to `yetype/docker-compose.yml`. Change the `node` and `caddy` services to point to the docker images in a registry (e.g. `image: ghcr.io/anthonyrota/yetype-api:main`). Create an `env` folder at `yetype/env` and create `yetype/env/production.env`, `yetype/env/production-postgres.env` and `yetype/env/server.env` like in [Local production env files](#local-production-env-files), except change `server.env` to point to your actual domain name (make sure your nameservers are pointed to the VPS). Then you need to copy the [./init.sql](init.sql) file into `yetype/init.sql`. You're file structure should look like this
 
 ```
-yetype
+yetype/
   init.sql
   docker-compose.yml
   env/
