@@ -1,8 +1,6 @@
-import { useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { distinctUntilChanged, map } from 'rxjs';
+import { useIsLoggedIn } from '../hooks/useIsLoggedIn.js';
 import { useObservable } from '../hooks/useObservable.js';
-import { authenticatedUser$, userAuthenticationStatus$ } from '../persistedState/authenticatedUser.js';
 import { setTestConfig, testConfig$ } from '../persistedState/testConfig.js';
 import { TestConfig, TypingTestType, validTypingTestTimeLimits, validTypingTestWordLimits } from '../persistedState/testConfigTypes.js';
 import { Theme, setTheme, theme$ } from '../persistedState/theme.js';
@@ -159,26 +157,15 @@ function HeaderTestConfigSections(): JSX.Element {
 }
 
 function HeaderProfileItems(): JSX.Element {
-  const isNotLoggedIn = useObservable(
-    useMemo(
-      () =>
-        authenticatedUser$.pipe(
-          map((authenticatedUser) => authenticatedUser === null),
-          distinctUntilChanged(),
-        ),
-      [],
-    ),
-    undefined,
-    userAuthenticationStatus$.value.authenticatedUser === null,
-  );
-  return isNotLoggedIn ? (
+  const isLoggedIn = useIsLoggedIn();
+  return isLoggedIn ? (
     <>
-      <HeaderAnchorButton toRoute={Route.LogIn}>Login</HeaderAnchorButton>
-      <HeaderAnchorButton toRoute={Route.SignUp}>Sign Up</HeaderAnchorButton>
+      <HeaderAnchorButton toRoute={Route.Account}>Account</HeaderAnchorButton>
     </>
   ) : (
     <>
-      <HeaderAnchorButton toRoute={Route.Account}>Account</HeaderAnchorButton>
+      <HeaderAnchorButton toRoute={Route.LogIn}>Login</HeaderAnchorButton>
+      <HeaderAnchorButton toRoute={Route.SignUp}>Sign Up</HeaderAnchorButton>
     </>
   );
 }

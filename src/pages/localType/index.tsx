@@ -4,6 +4,7 @@ import { Observable, skip } from 'rxjs';
 import { makeApiRequest } from '../../api.js';
 import { commonWords } from '../../commonWords.js';
 import { InfoButton } from '../../components/Form.js';
+import { useIsLoggedIn } from '../../hooks/useIsLoggedIn.js';
 import { useObservable } from '../../hooks/useObservable.js';
 import { useTitle } from '../../hooks/useTitle.js';
 import { resetAuthenticatedUser, userAuthenticationStatus$ } from '../../persistedState/authenticatedUser.js';
@@ -456,6 +457,7 @@ export function LocalTypePage(): JSX.Element {
     };
   }, [specificQuoteId]);
   const finishTest = (testState: InProgressTestState, doneWords: string[]): void => {
+    clearTestCheckIntervalRef.current?.();
     const newTestState: TestState = {
       type: TestStateType.Ended,
       replayData: replayDataRef.current,
@@ -571,8 +573,10 @@ export function LocalTypePage(): JSX.Element {
       },
     });
   }, [testState.type]);
+  const clearTestCheckIntervalRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (testState.type !== TestStateType.InProgress) {
+      clearTestCheckIntervalRef.current = null;
       return;
     }
     const id = setInterval(() => {
@@ -582,14 +586,16 @@ export function LocalTypePage(): JSX.Element {
       }
       setTestInfo(getTestInfo(testConfig, testState, doneWords.length));
     });
-    return () => {
+    const stop = (): void => {
       clearInterval(id);
     };
+    clearTestCheckIntervalRef.current = stop;
+    return stop;
   }, [testConfig, testState, doneWords]);
   const firstWordRef = useRef<HTMLSpanElement>(null);
   const currentWordRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    if (testState.type === TestStateType.Ended || testState.type === TestStateType.TimeTravel) {
+    if (testState.type === TestStateType.Ended || (testState.type === TestStateType.TimeTravel && testState.isEnded)) {
       return;
     }
     const onResize = (): void => {
@@ -736,6 +742,8 @@ export function LocalTypePage(): JSX.Element {
     }
     const editMilliseconds = testState.type === TestStateType.BeforeStart ? 0 : Date.now() - testState.startTime.getTime();
     if (isTestDone(testConfig, currentTestState, doneWords.length)) {
+      // I doubt react would call an onInputChange after the test is finished (which would clear replayData breaking the immediate replay) because the state
+      // would be changed to remove the input field.
       finishTest(currentTestState, doneWords);
       return;
     }
@@ -872,6 +880,7 @@ function Result(props: {
   onTimeTravelClick: () => void;
   makeSpecificQuote: () => void;
 }): JSX.Element {
+  const isLoggedIn = useIsLoggedIn();
   const { data, restartButtonProps, restartButtonRef, onTimeTravelClick, makeSpecificQuote } = props;
   const { testConfig, testState, charactersTypedCorrectly, charactersTypedIncorrectly, wordsTypedCorrectly, wordsTypedIncorrectly, secondsTaken } = data;
   const { wpm, totalCharacters, totalWords, accuracy } = calculateTestDataToShowToUser({
@@ -890,15 +899,17 @@ function Result(props: {
     maybeQuoteFragment = (
       <>
         <InfoButton onClick={makeSpecificQuote}>Repeat Quote</InfoButton>
-        <InfoButton
-          onClick={() => {
-            navigate(Route.History, {
-              state: testState.quoteId,
-            });
-          }}
-        >
-          See Quote History
-        </InfoButton>
+        {isLoggedIn && (
+          <InfoButton
+            onClick={() => {
+              navigate(Route.History, {
+                state: testState.quoteId,
+              });
+            }}
+          >
+            See Quote History
+          </InfoButton>
+        )}
       </>
     );
   }

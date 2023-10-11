@@ -27,7 +27,6 @@ const maxFilters = 5;
 async function getGetPastTestsResponse(req: import('express').Request): Promise<GetPastTestsResponse> {
   const requestData = getValidGetPastTestsRequest(req.body);
   if (requestData === null) {
-    console.log(req.body);
     return { type: GetPastTestsResponseType.Fail };
   }
   const { cursor, inclusiveFilters } = requestData;
