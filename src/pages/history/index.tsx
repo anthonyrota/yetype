@@ -109,11 +109,17 @@ const getQueryFilters = (
   return filters;
 };
 
+const dateFormat = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
 // https://stackoverflow.com/questions/7641791/javascript-library-for-human-friendly-relative-date-formatting
 function prettyDate(time: number): string | null {
   const diff = (new Date().getTime() - time) / 1000;
   const day_diff = Math.floor(diff / 86400);
-  if (isNaN(day_diff) || day_diff < 0 || day_diff >= 31) {
+  if (isNaN(day_diff) || day_diff < 0) {
     return null;
   }
   /* eslint-disable @typescript-eslint/no-unnecessary-condition */
@@ -127,7 +133,7 @@ function prettyDate(time: number): string | null {
     (day_diff === 1 && 'Yesterday') ||
     (day_diff < 7 && day_diff + ' days ago') ||
     (day_diff < 31 && Math.ceil(day_diff / 7) + ' weeks ago') ||
-    null
+    dateFormat.format(new Date(time))
   );
   /* eslint-enable @typescript-eslint/no-unnecessary-condition */
 }

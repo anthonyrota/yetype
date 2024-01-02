@@ -32,7 +32,7 @@ POSTGRES_PASSWORD=postgres
 Locally set up a development postgres database using
 
 ```bash
-$ docker compose -f docker-compose-dev.yml
+$ docker compose -f docker-compose-dev.yml up
 ```
 
 The sql set up file is located at [./init.sql](init.sql). The database is accessible at `localhost:5432`. The api server code that connects to the database is located at [./src/server/db.ts](src/server/db.ts).
